@@ -2,6 +2,10 @@
 
 Hearth & Larder is a small kitchen keeper that runs on your own computer. It tracks what is in your larder, root cellar and pantry, holds your recipes, and helps you plan the week's meals and shopping.
 
+It's free. If it earns a place in your kitchen, you can buy me a coffee:
+
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=stephaniebo&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/stephaniebo)
+
 ![The Hearth home screen, showing what to use soon, what is running low and today's table](docs/screenshots/hearth.png)
 
 ## Install it with a coding assistant
@@ -157,3 +161,9 @@ npm run test:e2e   # the browser test, using a throwaway data folder on port 419
 ## License
 
 MIT. See [LICENSE](LICENSE). Made by Stephanie Lippencott.
+
+## Support
+
+If Hearth & Larder helps you, you can say thanks with a coffee:
+
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=stephaniebo&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/stephaniebo)

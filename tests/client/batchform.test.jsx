@@ -1,5 +1,5 @@
 import { it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ToastProvider } from '../../client/src/components/ToastProvider.jsx';
 import { BatchForm } from '../../client/src/screens/BatchForm.jsx';
@@ -17,10 +17,11 @@ it('sends price null when the source is changed from bought to gifted', async ()
   });
   const onSaved = vi.fn();
   render(<ToastProvider><BatchForm open item={{ id: 2, name: 'Honey', unit: 'jar' }} onClose={() => {}} onSaved={onSaved} /></ToastProvider>);
-  await userEvent.type(screen.getByLabelText('Quantity'), '2');
+  fireEvent.change(screen.getByLabelText('Quantity'), { target: { value: '2' } });
   await userEvent.selectOptions(screen.getByLabelText('Where it came from'), 'bought');
-  await userEvent.type(screen.getByLabelText('Price paid'), '12');
-  await userEvent.type(screen.getByLabelText('Where bought'), 'Farm stand');
+  await screen.findByLabelText('Price paid');
+  fireEvent.change(screen.getByLabelText('Price paid'), { target: { value: '12' } });
+  fireEvent.change(screen.getByLabelText('Where bought'), { target: { value: 'Farm stand' } });
   await userEvent.selectOptions(screen.getByLabelText('Where it came from'), 'gifted');
   expect(screen.queryByLabelText('Price paid')).toBeNull();
   await userEvent.click(screen.getByRole('button', { name: 'Save' }));

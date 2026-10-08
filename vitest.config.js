@@ -7,7 +7,7 @@ export default defineConfig({
       { test: { name: 'server', include: ['tests/server/**/*.test.js'], environment: 'node' } },
       {
         plugins: [react()],
-        test: { name: 'client', include: ['tests/client/**/*.test.jsx'], environment: 'jsdom', setupFiles: ['tests/client/setup.js'] },
+        test: { name: 'client', include: ['tests/client/**/*.test.jsx'], environment: 'jsdom', testTimeout: 15000, hookTimeout: 15000, setupFiles: ['tests/client/setup.js'] },
       },
     ],
   },

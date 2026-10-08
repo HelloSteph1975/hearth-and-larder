@@ -1232,3 +1232,21 @@ a.tag:hover { transform: translateY(-1px) rotate(-1deg); color: var(--ink); }
   .store-row { flex-wrap: wrap; }
   .icon-select { flex: 1 1 100px; }
 }
+
+/* ---------- Recipe Box: choosing cards to print ---------- */
+
+.select-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 18px; padding: 12px 16px; }
+.select-bar:hover { transform: none; box-shadow: var(--shadow); }
+.select-hint { margin: 0; font-size: 1.3rem; flex: 1 1 220px; }
+.select-count { font-weight: 700; color: var(--brick); }
+.recipe-pick-wrap { position: relative; display: grid; }
+.recipe-pick-wrap > .recipe-tile { height: 100%; }
+.recipe-pick-wrap.is-picked > .recipe-tile { outline: 3px solid var(--garden); outline-offset: 2px; }
+.recipe-pick {
+  position: absolute; top: 8px; left: 8px;
+  display: grid; place-items: center; width: 44px; height: 44px;
+  background: var(--cream); border: 2px solid var(--honey); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow); cursor: pointer;
+}
+.recipe-pick input { width: 22px; height: 22px; accent-color: var(--garden-dark); cursor: pointer; }
+.recipe-pick:focus-within { outline: 3px solid var(--tomato); outline-offset: 2px; }

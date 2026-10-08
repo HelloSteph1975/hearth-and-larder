@@ -1,0 +1,159 @@
+/* ---------- Paper ----------
+   Print sheets (components/Print.jsx) are mounted into <body> only while printing.
+   When one is there, print hides the app and lays the sheet out on white paper:
+   ink and brick text, thin honey rules, no gingham, no shadows. */
+
+@media screen {
+  .print-only, .print-sheet { display: none !important; }
+}
+
+@page { margin: 14mm; }
+@page plan { size: landscape; margin: 10mm 12mm; }
+
+@media print {
+  html, body { background: #fff !important; }
+  body.has-print-sheet > :not(.print-sheet) { display: none !important; }
+  .no-print, .toast-region, dialog { display: none !important; }
+
+  .print-sheet {
+    display: block;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 10.5pt;
+    line-height: 1.4;
+    background: #fff;
+  }
+  .print-sheet *, .print-head { box-shadow: none !important; text-shadow: none !important; }
+  .print-sheet.is-landscape { page: plan; font-size: 9.5pt; }
+  .print-sheet h2, .print-sheet h3, .print-sheet h4 { margin: 0; }
+  .print-sheet .hand { font-family: var(--font-hand); font-weight: 600; }
+
+  /* Header and footer */
+  .print-head {
+    display: flex; align-items: baseline; gap: 4pt 14pt; flex-wrap: wrap;
+    padding-bottom: 5pt; margin: 0 0 12pt;
+    border-bottom: 1.25pt solid var(--print-rule);
+    color: var(--ink); font-family: var(--font-body);
+  }
+  .print-head p { margin: 0; }
+  .print-wordmark {
+    font-family: var(--font-head); font-weight: 700; font-size: 15pt; line-height: 1;
+    color: var(--brick); font-variation-settings: 'SOFT' 100, 'WONK' 1;
+  }
+  .print-what { font-size: 8pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+  .print-date { margin-left: auto !important; font-size: 8.5pt; color: var(--ink-soft); }
+  .print-foot {
+    margin: 16pt 0 0; padding-top: 4pt; border-top: .5pt solid var(--print-rule-soft);
+    text-align: center; font-family: var(--font-hand); font-size: 11pt; color: var(--ink-soft);
+    break-inside: avoid;
+  }
+
+  /* Shared type */
+  .print-title {
+    font-family: var(--font-head); font-weight: 700; font-size: 21pt; line-height: 1.1;
+    color: var(--brick); font-variation-settings: 'SOFT' 100, 'WONK' 1;
+  }
+  .print-sub { margin: 2pt 0 10pt; color: var(--ink-soft); font-size: 9.5pt; }
+  .print-quiet { color: var(--ink-soft); }
+  .print-wait { margin: 24pt 0; font-family: var(--font-hand); font-size: 16pt; color: var(--ink-soft); }
+  .print-sheet h3 {
+    font-family: var(--font-head); font-weight: 600; font-size: 12.5pt; color: var(--brick);
+    margin: 12pt 0 5pt; padding-bottom: 2pt; border-bottom: .75pt solid var(--print-rule);
+    break-after: avoid;
+  }
+  .print-flag { color: var(--tomato-dark); font-weight: 700; white-space: nowrap; }
+  .print-flag.is-quiet { color: var(--ink-soft); font-weight: 600; }
+  .print-notes p { margin: 0; font-size: 14pt; line-height: 1.25; white-space: pre-wrap; color: var(--ink); }
+
+  /* Tables */
+  .print-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .print-table thead { display: table-header-group; }
+  .print-table thead th {
+    text-align: left; vertical-align: bottom; padding: 3pt 6pt; white-space: nowrap;
+    font-size: 7.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brick);
+    border-bottom: 1pt solid var(--print-rule);
+  }
+  .print-table td, .print-table tbody th {
+    text-align: left; vertical-align: top; padding: 4pt 6pt;
+    border-bottom: .5pt solid var(--print-rule-soft);
+  }
+  .print-table tbody th { font-weight: 700; }
+  .print-table .num { text-align: right; white-space: nowrap; }
+  .print-table tr { break-inside: avoid; }
+  .print-table tr.is-used td { color: var(--ink-soft); }
+  .print-table .print-divider th {
+    padding: 8pt 6pt 2pt; border-bottom: .75pt solid var(--print-rule);
+    font-family: var(--font-hand); font-size: 13pt; font-weight: 600; color: var(--ink-soft);
+    text-transform: none; letter-spacing: 0;
+  }
+  .print-cell-note { font-size: 12pt; line-height: 1.1; color: var(--ink); }
+  .print-nowrap { white-space: nowrap; }
+  .print-used { display: block; font-size: 7.5pt; }
+
+  /* Recipe card */
+  .print-recipe { break-inside: auto; }
+  .print-recipe-head { display: flex; align-items: flex-start; gap: 16pt; margin-bottom: 4pt; }
+  .print-recipe-titles { flex: 1 1 auto; min-width: 0; }
+  .print-recipe-photo {
+    flex: none; width: 34mm; height: 34mm; object-fit: cover;
+    border-radius: 4pt; border: .75pt solid var(--print-rule);
+  }
+  .print-lede { margin: 4pt 0 6pt; font-size: 11pt; font-style: italic; color: var(--ink); }
+  .print-meta { list-style: none; display: flex; flex-wrap: wrap; gap: 2pt 0; margin: 0; padding: 0; font-size: 9.5pt; color: var(--ink-soft); }
+  .print-meta li + li::before { content: '·'; padding: 0 7pt; color: var(--print-rule); font-weight: 700; }
+  .print-meta strong { color: var(--ink); }
+  .print-family { color: var(--brick); font-weight: 700; }
+  .print-credit { margin: 3pt 0 0; font-size: 13pt; color: var(--ink-soft); }
+
+  .print-recipe-body { display: grid; grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 0 20pt; align-items: start; }
+  .print-ingredients ul { list-style: none; margin: 0 0 6pt; padding: 0; break-inside: avoid; }
+  .print-ing-group { break-inside: avoid; }
+  .print-ingredients li { padding: 2.5pt 0; border-bottom: .5pt dotted var(--print-rule-soft); }
+  .print-qty { font-weight: 700; color: var(--brick); white-space: nowrap; }
+  .print-section { font-size: 13pt; color: var(--ink-soft); margin: 6pt 0 0 !important; }
+  .print-steps { margin: 0; padding-left: 0; list-style: none; counter-reset: step; }
+  .print-steps li { counter-increment: step; position: relative; padding: 0 0 7pt 24pt; break-inside: avoid; }
+  .print-steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -1pt;
+    font-family: var(--font-head); font-weight: 700; font-size: 13pt; color: var(--brick);
+  }
+  .print-method .print-notes { break-inside: avoid; }
+
+  .print-nutrition { margin-top: 10pt; break-inside: avoid; }
+  .print-nutrition dl { display: flex; flex-wrap: wrap; gap: 4pt 0; margin: 0; font-size: 9pt; }
+  .print-nutrition dl > div { display: flex; gap: 4pt; padding: 0 10pt 0 0; margin-right: 10pt; border-right: .5pt solid var(--print-rule-soft); }
+  .print-nutrition dl > div:last-child { border-right: 0; }
+  .print-nutrition dt { color: var(--ink-soft); }
+  .print-nutrition dd { margin: 0; font-weight: 700; }
+
+  /* One recipe card per page */
+  .print-page + .print-page { break-before: page; }
+
+  /* Item record */
+  .print-facts {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6pt 16pt;
+    margin: 8pt 0 4pt; padding: 7pt 0; border-top: .5pt solid var(--print-rule-soft); border-bottom: .5pt solid var(--print-rule-soft);
+  }
+  .print-facts dt { font-size: 7.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+  .print-facts dd { margin: 0; font-weight: 600; }
+  .print-batches { font-size: 8.5pt; }
+  .print-batches td, .print-batches thead th { padding-left: 4pt; padding-right: 4pt; }
+  .print-prices { width: auto; min-width: 60%; }
+
+  /* Meal plan: the week across one landscape page */
+  .print-plan { table-layout: fixed; font-size: 9pt; }
+  .print-plan thead th { text-align: center; font-size: 8pt; padding-bottom: 4pt; }
+  .print-plan-wd { font-family: var(--font-head); font-size: 10.5pt; letter-spacing: 0; text-transform: none; }
+  .print-plan .print-plan-corner { width: 20mm; padding: 0; border-bottom: 1pt solid var(--print-rule); }
+  .print-plan { break-inside: avoid; }
+  .print-plan tbody th { font-size: 14pt; font-weight: 600; color: var(--brick); vertical-align: top; padding-top: 6pt; }
+  .print-plan tbody td { height: 27mm; padding: 4pt 5pt; border-left: .5pt solid var(--print-rule-soft); border-bottom: .5pt solid var(--print-rule); }
+  .print-plan-entry { padding: 0 0 4pt; margin-bottom: 4pt; border-bottom: .5pt dotted var(--print-rule-soft); line-height: 1.25; }
+  .print-plan-entry:last-child { border-bottom: 0; margin-bottom: 0; }
+  .print-plan-entry strong { color: var(--ink); }
+  .print-plan-note { display: block; font-size: 12pt; line-height: 1.1; color: var(--ink-soft); }
+  .print-plan-note.is-only { color: var(--ink); }
+
+  /* The shopping list prints the page itself; its header sits above. */
+  .shopping > .print-head { margin-bottom: 8pt; }
+}

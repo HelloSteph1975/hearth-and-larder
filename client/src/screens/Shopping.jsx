@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Check, Pencil, Plus, Trash2, X, Printer, PackageCheck, ListChecks } from 'lucide-react';
+import { Check, Pencil, Plus, Trash2, X, PackageCheck, ListChecks } from 'lucide-react';
 import { useApi } from '../lib/useApi.js';
 import { api } from '../lib/api.js';
 import { todayISO, weekStart, addDays } from '../lib/dates.js';
 import { formatMoney, formatQty } from '../lib/format.js';
 import { PageHeader } from '../components/PageHeader.jsx';
 import { Button } from '../components/Button.jsx';
+import { PrintButton, PrintHeader } from '../components/Print.jsx';
 import { Badge } from '../components/Badge.jsx';
 import { Dialog } from '../components/Dialog.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
@@ -214,8 +215,9 @@ export function Shopping() {
 
   return (
     <div className="shopping">
+      <PrintHeader what="Shopping list" className="print-only" />
       <PageHeader title="Shopping List" note={note}
-        actions={all.length > 0 && <Button variant="ghost" icon={Printer} onClick={() => window.print()}>Print</Button>} />
+        actions={all.length > 0 && <PrintButton />} />
       <div className="build-bar card card-butter no-print">
         <Field label="From"><DateInput value={from} onChange={e => setRange(r => ({ ...r, from: e.target.value }))} /></Field>
         <Field label="To"><DateInput value={to} onChange={e => setRange(r => ({ ...r, to: e.target.value }))} /></Field>

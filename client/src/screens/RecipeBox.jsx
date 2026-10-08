@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, SquareCheck } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader.jsx';
 import { Button } from '../components/Button.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { RecipeCard } from '../components/RecipeCard.jsx';
+import { PrintButton, PrintFooter, PrintHeader, PrintSheet } from '../components/Print.jsx';
+import { RecipeIndexPrint, RecipePrint } from '../components/PrintViews.jsx';
+import { useToast } from '../components/ToastProvider.jsx';
 import { useApi } from '../lib/useApi.js';
+import { api } from '../lib/api.js';
+import { usePrint } from '../lib/usePrint.js';
 
 const FILTERS = [
   ['', 'All'], ['favorites', 'Favorites'], ['family', 'Family recipes'], ['can_make', 'Can make now'],
 ];
 const FILTER_PARAM = { favorites: 'favorite=1', family: 'family=1', can_make: 'can_make=1' };
+const FILTER_NOTE = { favorites: 'favorites', family: 'family recipes', can_make: 'can make now' };
 
 export function RecipeBox() {
   const [params, setParams] = useSearchParams();
@@ -50,6 +56,36 @@ export function RecipeBox() {
     return () => window.removeEventListener('hl:recipes-changed', again);
   }, [reload, reloadTags]);
 
+  const toast = useToast();
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState(() => new Set());
+  const [printMode, setPrintMode] = useState('index');
+  const [cards, setCards] = useState(null);
+  const printer = usePrint({
+    ready: printMode === 'cards' ? Boolean(cards) : Boolean(recipes) && !loading,
+    onAfter: () => { setPrintMode('index'); setCards(null); },
+  });
+  // Only cards still in the list count, so a search that hides a ticked card leaves it off the printout.
+  const chosen = (recipes ?? []).filter(r => picked.has(r.id));
+  const toggle = id => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const selectAll = () => setPicked(new Set((recipes ?? []).map(r => r.id)));
+  const printIndex = () => { setPrintMode('index'); setCards(null); printer.print(); };
+  async function printCards() {
+    if (!chosen.length) return;
+    setPrintMode('cards');
+    setCards(null);
+    printer.print();
+    try {
+      setCards(await Promise.all(chosen.map(r => api.get(`/api/recipes/${r.id}`))));
+    } catch (err) {
+      printer.cancel();
+      setPrintMode('index');
+      toast?.show({ message: err.message });
+    }
+  }
+  const preparingCards = printer.preparing && printMode === 'cards';
+  const indexNotes = [q && `matching "${q}"`, FILTER_NOTE[filter], tag && `tagged ${tag}`].filter(Boolean);
+
   const setParam = (key, value) => setParams(p => { const n = new URLSearchParams(p); if (value) n.set(key, value); else n.delete(key); return n; });
   const filtered = Boolean(q || tag || filter);
   const clear = () => { setSearch(''); setParams({}); };
@@ -58,7 +94,24 @@ export function RecipeBox() {
 
   return (
     <>
-      <PageHeader title="Recipe Box" note={note} actions={<><Button as={Link} to="/can-make" variant="secondary">What can I make?</Button>{newButton}</>} />
+      <PageHeader title="Recipe Box" note={note} actions={<>
+        {recipes?.length > 0 && <PrintButton onClick={printIndex} busy={printer.preparing && printMode === 'index'}>Print index</PrintButton>}
+        {recipes?.length > 0 && <Button variant="ghost" icon={SquareCheck} aria-pressed={selecting} onClick={() => setSelecting(v => !v)}>Print cards</Button>}
+        <Button as={Link} to="/can-make" variant="secondary">What can I make?</Button>{newButton}
+      </>} />
+      {selecting && (
+        <section className="select-bar card card-butter no-print" aria-label="Choose cards to print">
+          <p className="hand select-hint">Tick the cards to print, one to a page.</p>
+          <span className="select-count">{chosen.length} selected</span>
+          <Button size="sm" variant="secondary" onClick={selectAll}>Select all</Button>
+          <Button size="sm" variant="ghost" onClick={() => setPicked(new Set())} disabled={!picked.size}>Clear</Button>
+          <PrintButton size="sm" variant="primary" onClick={printCards} busy={preparingCards} disabled={!chosen.length}>
+            Print {chosen.length === 1 ? '1 card' : `${chosen.length} cards`}
+          </PrintButton>
+          <Button size="sm" variant="ghost" onClick={() => setSelecting(false)}>Done</Button>
+          <span className="visually-hidden" role="status">{preparingCards ? 'Preparing the cards for printing' : ''}</span>
+        </section>
+      )}
       <div className="toolbar" role="search">
         <label className="search-box">
           <Search size={18} aria-hidden="true" />
@@ -89,8 +142,30 @@ export function RecipeBox() {
         )
       ) : (
         <div className={`grid-cards recipe-grid-cards${loading ? ' is-refreshing' : ''}`}>
-          {recipes?.map(r => <RecipeCard key={r.id} recipe={r} />)}
+          {recipes?.map(r => (selecting ? (
+            <div key={r.id} className={`recipe-pick-wrap${picked.has(r.id) ? ' is-picked' : ''}`}>
+              <RecipeCard recipe={r} />
+              <label className="recipe-pick">
+                <input type="checkbox" checked={picked.has(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.title} for printing`} />
+              </label>
+            </div>
+          ) : <RecipeCard key={r.id} recipe={r} />))}
         </div>
+      )}
+
+      {printer.active && printMode === 'index' && recipes && (
+        <PrintSheet what="Recipe index"><RecipeIndexPrint recipes={recipes} filters={indexNotes} /></PrintSheet>
+      )}
+      {printer.active && printMode === 'cards' && cards && (
+        <PrintSheet bare className="is-cards">
+          {cards.map(c => (
+            <section className="print-page" key={c.id}>
+              <PrintHeader what="Recipe card" />
+              <RecipePrint recipe={c} />
+              <PrintFooter />
+            </section>
+          ))}
+        </PrintSheet>
       )}
     </>
   );

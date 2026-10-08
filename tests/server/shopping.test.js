@@ -121,6 +121,19 @@ it('subtracts ticked plan amounts from a rebuild, matching by name and unit fami
   expect(open.map(i => [i.name, i.quantity, i.unit])).toEqual([['Carrots', 1, 'lb']]);
 });
 
+it('ignores ticked plan rows from a different date range', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const rec = (await h().post('/api/recipes').send({ title: 'Salad', servings: 1, ingredients: [{ name: 'Lettuce', quantity: 2, unit: 'each' }] })).body;
+  await h().post('/api/plan').send({ date: '2026-10-08', slot: 'supper', recipe_id: rec.id });
+  await h().post('/api/plan').send({ date: '2026-10-20', slot: 'supper', recipe_id: rec.id });
+  const old = (await h().post('/api/shopping/build').send({ from: '2026-10-06', to: '2026-10-12' })).body;
+  await h().patch(`/api/shopping/${old.find(i => i.name === 'Lettuce').id}`).send({ checked: true });
+  const next = (await h().post('/api/shopping/build').send({ from: '2026-10-19', to: '2026-10-25' })).body;
+  const open = next.filter(i => !i.checked);
+  expect(open.map(i => [i.name, i.quantity])).toEqual([['Lettuce', 2]]);
+});
+
 it('orders the list by shopping category and sends the category order', async () => {
   t = makeTestContext();
   const h = t.http;

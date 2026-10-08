@@ -39,11 +39,12 @@ function categoryLookup(db) {
 }
 
 // Plan rows already in the basket count as bought, so a rebuild doesn't ask for them twice.
-function tickedPlanRows(db) {
+// Only rows from the same date range count; an old ticked row must not hide a later need.
+function tickedPlanRows(db, range) {
   const base = new Map(); // name|family -> amount already ticked
   const names = new Set(); // every ticked name
   const blanket = new Set(); // ticked with no amount: covers the whole need
-  for (const r of db.prepare("SELECT name, quantity, unit FROM shopping_items WHERE origin = 'plan' AND checked = 1 AND deleted_at IS NULL").all()) {
+  for (const r of db.prepare("SELECT name, quantity, unit FROM shopping_items WHERE origin = 'plan' AND checked = 1 AND deleted_at IS NULL AND plan_range = ?").all(range)) {
     const name = normalizeName(r.name);
     names.add(name);
     if (r.quantity == null) { blanket.add(name); continue; }
@@ -73,7 +74,7 @@ export function buildFromPlan(db, from, to) {
     }
   }
   const categoryFor = categoryLookup(db);
-  const ticked = tickedPlanRows(db);
+  const ticked = tickedPlanRows(db, `${from}..${to}`);
   const out = [];
   for (const [key, n] of needs) {
     const name = key.split('|')[0];

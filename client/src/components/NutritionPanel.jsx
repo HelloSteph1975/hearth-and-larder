@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-const ROWS = [
+export const NUTRIENTS = [
   ['calories', 'Calories', ''], ['protein_g', 'Protein', 'g'], ['carbs_g', 'Carbs', 'g'], ['fat_g', 'Fat', 'g'],
   ['fiber_g', 'Fiber', 'g'], ['sugar_g', 'Sugar', 'g'], ['sodium_mg', 'Sodium', 'mg'],
 ];
@@ -13,7 +13,7 @@ export function scaleNutrient(value, servings = 1) {
 const show = (v, unit) => (v == null ? '–' : `${Math.round(v * 10) / 10}${unit}`);
 
 export function NutritionPanel({ recipe, servings }) {
-  const present = ROWS.filter(([k]) => recipe[k] != null);
+  const present = NUTRIENTS.filter(([k]) => recipe[k] != null);
   if (!present.length) {
     return (
       <section className="nutrition nutrition-empty">

@@ -4,6 +4,8 @@
   --brick: #8E3A2E; --garden: #6B8F4E; --garden-dark: #557340; --garden-soft: #E3EDD6;
   --honey: #F0D78C; --honey-light: #F6E3A1; --honey-dark: #6A4B12;
   --ink: #4A3426; --ink-soft: #7A6455; --line: #EADFC0;
+  /* Paper rules: honey deep enough to show on white without a heavy line. */
+  --print-rule: #CDAE55; --print-rule-soft: #E3D3A2;
   --radius: 14px; --radius-sm: 8px;
   --shadow: 0 1px 0 rgba(74, 52, 38, .06), 0 6px 18px rgba(74, 52, 38, .08);
   --shadow-lift: 0 2px 0 rgba(74, 52, 38, .06), 0 12px 28px rgba(74, 52, 38, .14);

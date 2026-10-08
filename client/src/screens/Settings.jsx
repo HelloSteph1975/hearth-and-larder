@@ -344,7 +344,7 @@ export function BackupsCard() {
   }
 
   return (
-    <SectionCard id="s-backups" title="Backups" note="A backup is made each night when the app stops at 9:30 PM, and when the app starts if the last one is over a day old. You can also use Back up now.">
+    <SectionCard id="s-backups" title="Backups" note="When the Windows tasks are installed, a backup is made each night as the app stops at 9:30 PM. A backup is also made when the app starts if the last one is over a day old. You can also use Back up now.">
       <div><Button icon={DatabaseBackup} onClick={backUp} disabled={busy || restoring}>{busy ? 'Backing up...' : 'Back up now'}</Button></div>
       {error && <p className="error-note">{error.message}</p>}
       {backups && backups.length === 0 && <p className="hand">No backups yet.</p>}

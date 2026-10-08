@@ -11,6 +11,9 @@ import { useStores } from '../components/StoresProvider.jsx';
 import { Checkbox, Select } from '../components/Field.jsx';
 import { useApi } from '../lib/useApi.js';
 import { SOURCES, SOURCE_LABELS } from '../lib/options.js';
+import { PrintButton, PrintSheet } from '../components/Print.jsx';
+import { InventoryPrint } from '../components/PrintViews.jsx';
+import { usePrint } from '../lib/usePrint.js';
 import { ItemForm } from './ItemForm.jsx';
 import { NotFound } from './NotFound.jsx';
 
@@ -58,11 +61,21 @@ export function StoreScreen() {
   const clear = () => { setSearch(''); setFilters(NO_FILTERS); };
   const opt = rows => (rows ?? []).map(r => ({ value: r.id, label: r.name }));
 
+  const printer = usePrint({ ready: Boolean(items) && !loading });
+
   if (!store && storesLoading) return <SkeletonCards />;
   if (!store) return <NotFound />;
 
   const count = items?.length ?? 0;
   const addButton = <Button icon={Plus} onClick={() => setAdding(true)}>Add item</Button>;
+  const nameOf = (rows, id) => rows?.find(r => String(r.id) === String(id))?.name;
+  const filterNotes = [
+    filters.q && `matching "${filters.q}"`,
+    filters.category_id && nameOf(categories, filters.category_id),
+    filters.location_id && nameOf(locations, filters.location_id),
+    filters.source && SOURCE_LABELS[filters.source],
+    filters.low && 'running low only',
+  ].filter(Boolean);
   const note = items && !filtered ? (count === 0 ? 'Room for plenty more' : `${count} ${count === 1 ? 'thing' : 'things'} on the shelves`) : null;
 
   return (
@@ -72,7 +85,7 @@ export function StoreScreen() {
         style={store.color ? { '--store-color': store.color } : undefined}
         title={<span className="title-with-icon"><StoreIcon icon={store.icon} size={34} /> {store.name}</span>}
         note={note}
-        actions={addButton}
+        actions={<>{count > 0 && <PrintButton onClick={printer.print} busy={printer.preparing} />}{addButton}</>}
       />
 
       <div className="toolbar" role="search">
@@ -112,6 +125,10 @@ export function StoreScreen() {
         <div className={`grid-cards${loading ? ' is-refreshing' : ''}`}>
           {items?.map(item => <ItemCard key={item.id} item={item} storeIcon={store.icon} />)}
         </div>
+      )}
+
+      {printer.active && items && (
+        <PrintSheet what="Inventory"><InventoryPrint store={store} items={items} filters={filterNotes} /></PrintSheet>
       )}
 
       <ItemForm open={adding} storeId={store.id} onClose={() => setAdding(false)}

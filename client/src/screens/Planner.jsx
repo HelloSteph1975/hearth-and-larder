@@ -10,6 +10,9 @@ import { Button } from '../components/Button.jsx';
 import { AddToPlanDialog, SLOTS, SLOT_LABEL } from '../components/AddToPlanDialog.jsx';
 import { useDeleteWithUndo } from '../components/useDeleteWithUndo.jsx';
 import { useToast } from '../components/ToastProvider.jsx';
+import { PrintButton, PrintSheet } from '../components/Print.jsx';
+import { PlanPrint } from '../components/PrintViews.jsx';
+import { usePrint } from '../lib/usePrint.js';
 
 export { SLOTS };
 
@@ -103,7 +106,7 @@ export function Planner() {
   const weekStartDay = settings?.week_start ?? 'monday';
   const from = start ?? weekStart(todayISO(), weekStartDay);
   const days = weekDays(from);
-  const { data: entries, error: planError, reload } = useApi(settings ? `/api/plan?from=${from}&to=${days[6]}` : null, { keepPrevious: true });
+  const { data: entries, error: planError, loading: planLoading, reload } = useApi(settings ? `/api/plan?from=${from}&to=${days[6]}` : null, { keepPrevious: true });
   const { data: recipes, error: recipesError, reload: reloadRecipes } = useApi('/api/recipes');
   const { error: settingsError, reload: reloadSettings } = settingsState;
   const loadError = settingsError ?? planError ?? recipesError;
@@ -113,6 +116,7 @@ export function Planner() {
   const [dragging, setDragging] = useState(null);
   const del = useDeleteWithUndo();
   const toast = useToast();
+  const printer = usePrint({ ready: Boolean(entries) && !planLoading });
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor));
 
   const grid = useMemo(() => {
@@ -140,6 +144,7 @@ export function Planner() {
           <Button variant="ghost" icon={ChevronLeft} onClick={() => setStart(addDays(from, -7))} aria-label="Previous week" />
           <Button variant="ghost" onClick={() => setStart(null)}>This week</Button>
           <Button variant="ghost" icon={ChevronRight} onClick={() => setStart(addDays(from, 7))} aria-label="Next week" />
+          <PrintButton onClick={printer.print} busy={printer.preparing} disabled={!entries} />
           <Button as={Link} to={`/shopping?from=${from}&to=${days[6]}`} icon={ShoppingBasket}>Shopping list for this week</Button>
         </>} />
       {loadError ? (
@@ -179,6 +184,7 @@ export function Planner() {
         </div>
       </div>
       )}
+      {printer.active && entries && <PrintSheet what="Meal plan" className="is-landscape"><PlanPrint days={days} entries={entries} /></PrintSheet>}
       <DragOverlay>{dragging && <div className="plan-entry is-overlay">{dragging.recipe?.title ?? dragging.entry?.recipe_title ?? dragging.entry?.note}</div>}</DragOverlay>
       <AddToPlanDialog open={Boolean(adding)} initial={adding} recipes={recipes} onClose={() => setAdding(null)} onSaved={() => { setAdding(null); reload(); }} />
       <AddToPlanDialog open={Boolean(editingEntry)} entry={editingEntry} recipes={recipes} onClose={() => setEditingEntry(null)} onSaved={() => { setEditingEntry(null); reload(); }} />

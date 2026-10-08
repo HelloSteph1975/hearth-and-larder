@@ -58,6 +58,7 @@ Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don'
 - Builds a shopping list from the plan, leaving off anything the larder already covers or that you have already ticked.
 - Takes ingredients off the shelves when you tell it you cooked a recipe. Each recipe keeps a cooking history, and deleting an entry puts the ingredients back.
 - Lets you undo a delete for a few seconds. Deleted things are kept for 30 days before they are purged.
+- Prints tidy pages: a recipe card at the servings you choose, a store inventory, one item with its batches and prices, the week's meal plan on one landscape page, and a Recipe Box index or a stack of chosen recipe cards. The landscape week needs Chrome or Edge.
 - Backs up your data every night once the Windows schedule is installed, and when the app starts if the last backup is over a day old.
 
 | | |

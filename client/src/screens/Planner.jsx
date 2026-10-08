@@ -118,7 +118,7 @@ export function Planner() {
   const del = useDeleteWithUndo();
   const toast = useToast();
   // The week on paper must be the week whose dates head the columns.
-  const printer = usePrint({ ready: Boolean(planUrl && entries) && !planLoading, failed: Boolean(loadError), viewKey: planUrl ?? '' });
+  const printer = usePrint({ ready: Boolean(planUrl && entries) && !planLoading, failed: Boolean(settingsError ?? planError), viewKey: planUrl ?? '' });
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor));
 
   const grid = useMemo(() => {

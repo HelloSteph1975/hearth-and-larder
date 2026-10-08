@@ -122,3 +122,33 @@ it('ignores a double click on a tick box while the first is in flight', async ()
   box.click(); box.click();
   await waitFor(() => expect(calls.filter(c => c.method === 'PATCH')).toHaveLength(1));
 });
+
+it('adds up one ingredient that is short on several recipe lines', async () => {
+  // Three lines of 2 cups flour with 3 cups in stock: the server reports shortages of 1 and 2 cups.
+  const status = { ingredients: [
+    { name: 'Flour', status: 'have', scaled_quantity: 2, have: 3, unit: 'cup' },
+    { name: 'Flour', status: 'partial', scaled_quantity: 2, have: 1, unit: 'cup' },
+    { name: 'flour', status: 'missing', scaled_quantity: 2, have: 0, unit: 'cup' },
+  ] };
+  const client = { get: vi.fn(async () => []), post: vi.fn(async () => ({})) };
+  const res = await addShortfallsToList(shortfalls(status), client);
+  expect(res).toEqual({ added: ['Flour'], skipped: [] });
+  expect(client.post).toHaveBeenCalledTimes(1);
+  expect(client.post).toHaveBeenCalledWith('/api/shopping', { name: 'Flour', quantity: 3, unit: 'cup' });
+});
+
+it('keeps shortfalls apart when their units do not convert, but still skips names already waiting', async () => {
+  const client = { get: vi.fn(async () => [{ name: 'Cream', checked: 0 }]), post: vi.fn(async () => ({})) };
+  const res = await addShortfallsToList([
+    { name: 'Butter', quantity: 0.5, unit: 'cup' },
+    { name: 'Butter', quantity: 2, unit: 'tbsp' },
+    { name: 'Butter', quantity: 4, unit: 'oz' },
+    { name: 'Cream', quantity: 1, unit: 'cup' },
+    { name: 'Cream', quantity: 1, unit: 'cup' },
+  ], client);
+  expect(client.post.mock.calls.map(c => c[1])).toEqual([
+    { name: 'Butter', quantity: 0.63, unit: 'cup' },
+    { name: 'Butter', quantity: 4, unit: 'oz' },
+  ]);
+  expect(res).toEqual({ added: ['Butter', 'Butter'], skipped: ['Cream'] });
+});

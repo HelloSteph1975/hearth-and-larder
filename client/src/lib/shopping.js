@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { normalizeName, toBase, fromBase } from '../../../server/services/units.js';
 
 const norm = s => String(s ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 const round = n => Math.round(n * 100) / 100;
@@ -13,16 +14,32 @@ export function shortfalls(status) {
     });
 }
 
-// Adds each shortfall unless something by that name is already waiting on the list.
+// One name on several recipe lines (dough and filling) gives several shortfalls. Add those up when their
+// units convert (in the first line's unit); rows whose units can't be combined stay separate.
+export function combineShortfalls(rows) {
+  const out = new Map();
+  for (const row of rows) {
+    const base = row.quantity == null ? null : toBase(row.quantity, row.unit);
+    const key = `${normalizeName(row.name)}|${base ? base.family : 'any'}`;
+    const seen = out.get(key);
+    if (!seen) { out.set(key, { row: { ...row }, amount: base?.amount ?? null }); continue; }
+    if (base) {
+      seen.amount += base.amount;
+      seen.row.quantity = round(fromBase(seen.amount, seen.row.unit));
+    }
+  }
+  return [...out.values()].map(v => v.row);
+}
+
+// Adds each shortfall unless something by that name is already waiting (unticked) on the list.
 export async function addShortfallsToList(rows, client = api) {
   const list = await client.get('/api/shopping');
   const waiting = new Set((list ?? []).filter(r => !r.checked).map(r => norm(r.name)));
   const added = [];
   const skipped = [];
-  for (const row of rows) {
+  for (const row of combineShortfalls(rows)) {
     if (waiting.has(norm(row.name))) { skipped.push(row.name); continue; }
     await client.post('/api/shopping', row);
-    waiting.add(norm(row.name));
     added.push(row.name);
   }
   return { added, skipped };

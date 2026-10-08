@@ -6,3 +6,4 @@ config.json
 test-results/
 playwright-report/
 server.log
+docs/superpowers/

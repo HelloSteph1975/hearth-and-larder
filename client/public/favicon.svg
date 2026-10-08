@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <pattern id="check" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="6" fill="#FFFDF6"/>
+      <rect width="3" height="6" fill="#C44A3A" opacity=".5"/>
+      <rect width="6" height="3" fill="#C44A3A" opacity=".5"/>
+    </pattern>
+    <clipPath id="tile"><rect width="64" height="64" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="64" height="64" fill="#C44A3A"/>
+    <rect y="46" width="64" height="18" fill="url(#check)"/>
+    <path d="M0 46h64" stroke="#8E3A2E" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(6 4) scale(.82)" fill="none" stroke="#4A3426" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 21c-6 2-8 6-8 12v17c0 5 3 8 8 8h22c5 0 8-3 8-8V33c0-6-2-10-8-12z" fill="#F6E3A1" stroke="none"/>
+    <path d="M13 35h38v15c0 5-3 8-8 8H21c-5 0-8-3-8-8z" fill="#C44A3A" stroke="none"/>
+    <path d="M21 21c-6 2-8 6-8 12v17c0 5 3 8 8 8h22c5 0 8-3 8-8V33c0-6-2-10-8-12z"/>
+    <path d="M17 26v6" stroke="#FFFDF6" stroke-width="2.6"/>
+    <rect x="20" y="16" width="24" height="5" rx="1.5" fill="#FBF1D9"/>
+    <rect x="17" y="7" width="30" height="10" rx="3" fill="url(#check)"/>
+    <rect x="22" y="37" width="20" height="14" rx="2.5" fill="#FFFDF6"/>
+    <path d="M32 47.5c-3.6-2.3-5.4-4.2-5.4-6.3a2.7 2.7 0 0 1 5.4-.8 2.7 2.7 0 0 1 5.4.8c0 2.1-1.8 4-5.4 6.3z" fill="#C44A3A" stroke="#A63B2D" stroke-width="1.2"/>
+  </g>
+</svg>

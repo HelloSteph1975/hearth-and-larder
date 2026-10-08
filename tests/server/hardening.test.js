@@ -7,7 +7,11 @@ import { loadConfig } from '../../server/config.js';
 import { backupNow, restoreBackup } from '../../server/services/backup.js';
 
 let t;
-afterEach(() => t?.cleanup());
+const tmpDirs = [];
+afterEach(() => {
+  t?.cleanup();
+  while (tmpDirs.length) fs.rmSync(tmpDirs.pop(), { recursive: true, force: true });
+});
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 0xff, 0xd9]);
 
 const upload = (h, ownerType, ownerId) => h().post('/api/photos').field('owner_type', ownerType).field('owner_id', String(ownerId))
@@ -66,6 +70,7 @@ it('ignores unknown item filters', async () => {
 
 it('explains a broken config.json and a bad port', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-cfg-'));
+  tmpDirs.push(root);
   fs.writeFileSync(path.join(root, 'config.json'), '{ "dataDir": "D:\\Kitchen Data" }');
   expect(() => loadConfig({ env: {}, root })).toThrow(/config\.json.*double backslashes in Windows paths \(\\\\\)/s);
   fs.writeFileSync(path.join(root, 'config.json'), '{ "port": "abc" }');
@@ -77,7 +82,6 @@ it('explains a broken config.json and a bad port', () => {
   expect(() => loadConfig({ env: { HEARTH_PORT: '0' }, root })).toThrow(/HEARTH_PORT/);
   expect(() => loadConfig({ env: { HEARTH_PORT: '41.5' }, root })).toThrow(/HEARTH_PORT/);
   expect(() => loadConfig({ env: { HEARTH_DEMO_PORT: 'x' }, root, demo: true })).toThrow(/HEARTH_DEMO_PORT/);
-  fs.rmSync(root, { recursive: true });
 });
 
 it('keeps an untouched batch\'s starting amount in step with edits', async () => {

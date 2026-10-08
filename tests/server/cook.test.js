@@ -100,6 +100,23 @@ it('deleting a cook log puts the stock back, and restoring it takes it again', a
   expect((await h().get(`/api/cook-log?recipe_id=${id}`)).body).toHaveLength(1);
 });
 
+it('undoing an earlier cook leaves a batch live when a later cook used it up', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const item = (await h().post('/api/items').send({ store_id: 2, name: 'Rice', unit: 'cup', first_batch: { quantity: 5, unit: 'cup' } })).body;
+  const batch_id = item.batches[0].id;
+  const { id } = (await h().post('/api/recipes').send({ title: 'Pilaf', servings: 1 })).body;
+  const cook = take => h().post(`/api/recipes/${id}/cook`).send({ servings: 1, cooked_on: '2026-10-07', deductions: [{ batch_id, take }] });
+  const a = (await cook(2)).body;
+  await cook(3);
+  expect((await h().get(`/api/items/${item.id}`)).body.batches[0]).toMatchObject({ quantity: 0 });
+  expect((await h().get(`/api/items/${item.id}`)).body.batches[0].used_up_at).toBeTruthy();
+  await h().delete(`/api/cook-log/${a.id}`);
+  const b = (await h().get(`/api/items/${item.id}`)).body.batches[0];
+  expect(b.quantity).toBe(2);
+  expect(b.used_up_at).toBeNull();
+});
+
 it('restoring a cook log takes only what is left if the shelves changed meanwhile', async () => {
   t = makeTestContext();
   const h = t.http;

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, onTestFinished } from 'vitest';
 import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -33,12 +33,12 @@ describe('scripts/stop.js', () => {
 
   it('reads the port from env, then config.json, then defaults, and rejects a bad HEARTH_PORT', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-stop-'));
+    onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
     expect(resolvePort(dir, {})).toBe(4193);
     fs.writeFileSync(path.join(dir, 'config.json'), '{"port":4555}');
     expect(resolvePort(dir, {})).toBe(4555);
     expect(resolvePort(dir, { HEARTH_PORT: '4197' })).toBe(4197);
     expect(() => resolvePort(dir, { HEARTH_PORT: 'abc' })).toThrow(/HEARTH_PORT/);
     expect(() => resolvePort(dir, { HEARTH_PORT: '70000' })).toThrow(/HEARTH_PORT/);
-    fs.rmSync(dir, { recursive: true });
   });
 });

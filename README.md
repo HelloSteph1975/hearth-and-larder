@@ -57,7 +57,7 @@ Everything is in one folder: `Documents\Hearth & Larder Data`. It holds the data
 
 The app backs up every night at 9:30 PM when the Windows tasks are installed. Otherwise it backs up when it starts if the last backup is a day old, and you can press Back up now in Settings at any time. Backups are kept for 30 days, and the five newest are always kept.
 
-Settings can also restore an earlier backup. Restoring makes a safety copy of your current data first. Photos you deleted after that backup come back with it. Photos you added after the backup stay in the photos folder, but the restored data doesn't list them.
+Settings can also restore an earlier backup. Restoring makes a safety copy of your current data first. Photos you deleted after that backup come back with it only if they're still in the photo trash (kept 30 days). Photos you added after the backup stay in the photos folder, but the restored data doesn't list them.
 
 To use a different folder or port, edit `config.json` in the app's folder. Setup creates this file, and Git ignores it, so your settings stay out of the repository. In JSON, every backslash in a Windows path must be doubled:
 

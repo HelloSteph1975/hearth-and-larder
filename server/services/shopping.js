@@ -97,7 +97,8 @@ export function buildFromPlan(db, from, to) {
     });
   }
   return transaction(db, () => {
-    db.prepare("DELETE FROM shopping_items WHERE origin = 'plan' AND checked = 0").run();
+    // Only live rows: a deleted row keeps its Undo until the 30-day purge.
+    db.prepare("DELETE FROM shopping_items WHERE origin = 'plan' AND checked = 0 AND deleted_at IS NULL").run();
     const R = repos(db).shopping;
     for (const item of out) R.create({ ...item, origin: 'plan', plan_range: `${from}..${to}` });
     return listShopping(db);

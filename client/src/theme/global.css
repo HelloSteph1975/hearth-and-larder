@@ -1156,7 +1156,9 @@ a.tag:hover { transform: translateY(-1px) rotate(-1deg); color: var(--ink); }
 .all-done { font-size: 1.7rem; color: var(--garden-dark); margin: 0; }
 
 @media (max-width: 480px) {
-  .note-qty { display: none; }
+  /* No room beside the name: the amount drops onto its own line under it. */
+  .note-row { flex-wrap: wrap; row-gap: 0; padding-top: 4px; padding-bottom: 4px; }
+  .note-qty { order: 1; flex-basis: 100%; padding-left: 50px; margin-top: -4px; white-space: normal; }
 }
 @media print {
   .build-bar, .quick-add, .basket-actions { display: none !important; }

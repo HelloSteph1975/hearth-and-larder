@@ -3,7 +3,8 @@ import path from 'node:path';
 import { repos } from '../db/repos.js';
 import { transaction } from '../db/connection.js';
 import { saveRecipe } from '../db/recipes.js';
-import { defaultDataDir } from '../config.js';
+import { fileURLToPath } from 'node:url';
+import { defaultDataDir, readConfigFile } from '../config.js';
 
 const pad = n => String(n).padStart(2, '0');
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -192,18 +193,42 @@ const RECIPES = [
   },
 ];
 
-const samePath = (a, b) => {
-  const norm = p => path.resolve(p);
-  return process.platform === 'win32' ? norm(a).toLowerCase() === norm(b).toLowerCase() : norm(a) === norm(b);
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+// The folder's real name: follows junctions and symlinks, and on Windows ignores case.
+const canonical = p => {
+  let full = path.resolve(p);
+  const rest = [];
+  // Resolve the deepest part that exists, then add back what doesn't exist yet.
+  while (!fs.existsSync(full) && path.dirname(full) !== full) { rest.unshift(path.basename(full)); full = path.dirname(full); }
+  try { full = fs.realpathSync.native(full); } catch {}
+  const out = path.join(full, ...rest);
+  return process.platform === 'win32' ? out.toLowerCase() : out;
+};
+const within = (child, parent) => {
+  const rel = path.relative(parent, child);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 };
 
-export function assertDemoFolder(config, env = process.env) {
+// Every folder the normal (non-demo) app could be using: the default, HEARTH_DATA_DIR and config.json's dataDir.
+function realDataDirs(env, root) {
+  let file;
+  try {
+    file = readConfigFile(path.join(root, 'config.json'));
+  } catch (err) {
+    throw new Error(`Refusing to reset: could not read config.json to check where your real data lives (${err.message})`);
+  }
+  return [defaultDataDir(false), env.HEARTH_DATA_DIR, typeof file.dataDir === 'string' ? file.dataDir : null].filter(Boolean);
+}
+
+export function assertDemoFolder(config, env = process.env, root = PROJECT_ROOT) {
   if (config.demo !== true) {
     throw new Error('Refusing to reset: this is not the demo data folder (demo mode is off).');
   }
-  const real = [defaultDataDir(false), env.HEARTH_DATA_DIR].filter(Boolean);
-  if (real.some(p => samePath(p, config.dataDir))) {
-    throw new Error(`Refusing to reset: ${config.dataDir} is your real data folder, not a demo folder. Point HEARTH_DEMO_DATA_DIR somewhere else.`);
+  const demo = canonical(config.dataDir);
+  // The reset empties the demo folder's photos, so a real folder inside it counts too.
+  if (realDataDirs(env, root).some(p => { const real = canonical(p); return within(real, demo) || within(demo, real); })) {
+    throw new Error(`Refusing to reset: ${config.dataDir} is (or overlaps) your real data folder, not a demo folder. Point HEARTH_DEMO_DATA_DIR somewhere else.`);
   }
 }
 

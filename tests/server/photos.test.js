@@ -56,7 +56,7 @@ it('deleting an item trashes its photos and undo brings them back', async () => 
 
 it('purgeTrash removes old trash files only', async () => {
   t = makeTestContext();
-  const { purgeTrash } = await import('../../server/services/photos.js');
+  const { purgeTrash } = await import('../../server/services/purge.js');
   const trash = path.join(t.dataDir, 'photos', '_trash');
   fs.writeFileSync(path.join(trash, 'old.jpg'), 'x');
   fs.writeFileSync(path.join(trash, 'new.jpg'), 'x');

@@ -77,3 +77,21 @@ it('lists cooking history and deletes an entry with Undo', async () => {
   await userEvent.click(await screen.findByRole('button', { name: 'Undo' }));
   await waitFor(() => expect(calls.some(c => c.method === 'POST' && c.url === '/api/cook-log/4/restore')).toBe(true));
 });
+
+it('plans the recipe at the servings picked on the page', async () => {
+  HTMLDialogElement.prototype.showModal ??= function () { this.setAttribute('open', ''); };
+  global.fetch = vi.fn(async url => {
+    const s = Number(new URL(url, 'http://x').searchParams.get('servings') ?? 4);
+    return new Response(JSON.stringify(recipe(s)), { status: 200 });
+  });
+  render(
+    <ToastProvider><ConfirmProvider>
+      <MemoryRouter initialEntries={['/recipes/1']}><Routes><Route path="/recipes/:id" element={<RecipeDetail />} /></Routes></MemoryRouter>
+    </ConfirmProvider></ToastProvider>,
+  );
+  await userEvent.click(await screen.findByRole('button', { name: 'More servings' }));
+  await userEvent.click(screen.getByRole('button', { name: 'More servings' }));
+  await userEvent.click(screen.getByRole('button', { name: /Plan it/ }));
+  const dlg = await screen.findByRole('dialog');
+  expect(within(dlg).getByLabelText('Servings')).toHaveValue(6);
+});

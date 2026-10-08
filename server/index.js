@@ -1,8 +1,7 @@
 import { loadConfig } from './config.js';
 import { createContext } from './context.js';
 import { createApp, ROOT } from './app.js';
-import { purgeSoftDeleted } from './services/purge.js';
-import { purgeTrash } from './services/photos.js';
+import { purgeSoftDeleted, purgeTrash } from './services/purge.js';
 import { ensureRecentBackup, rotateBackups } from './services/backup.js';
 
 export function runMaintenance(ctx) {

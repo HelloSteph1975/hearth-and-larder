@@ -70,6 +70,11 @@ test('a day in the kitchen', async ({ page }) => {
   await page.getByRole('button', { name: 'Build from the plan' }).first().click();
   await expect(page.locator('.note-row', { hasText: 'Cream' })).toBeVisible();
   await expect(page.locator('.note-row', { hasText: 'potatoes' })).toHaveCount(0);
+  // On a phone the amount still shows, on its own line.
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(page.locator('.note-row', { hasText: 'Cream' }).locator('.note-qty')).toBeVisible();
+  await expect(page.locator('.note-row', { hasText: 'Cream' }).locator('.note-qty')).toHaveText('1 cup');
+  await page.setViewportSize({ width: 1400, height: 900 });
 
   // 7. Cook it: the cellar drops to 8 lb.
   await page.goto(recipeUrl);

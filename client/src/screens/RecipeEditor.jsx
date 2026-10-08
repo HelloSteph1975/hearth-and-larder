@@ -156,6 +156,16 @@ function EditorForm({ recipe, defaultServings }) {
 
   async function save(e) {
     e.preventDefault();
+    if (pasteText.trim()) {
+      const discard = await confirm({
+        title: 'Discard the pasted list?',
+        body: 'The pasted list has not been turned into ingredients yet. Keep it to turn it into ingredients first, or discard it and save.',
+        confirmLabel: 'Discard and save',
+        danger: true,
+      });
+      if (!discard) return;
+      setPasteText('');
+    }
     setSaving(true);
     setErrors({});
     let section = null;

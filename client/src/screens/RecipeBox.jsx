@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader.jsx';
@@ -18,10 +18,20 @@ export function RecipeBox() {
   const filter = params.get('filter') ?? '';
   const q = params.get('q') ?? '';
   const [search, setSearch] = useState(q);
+  const [seenQ, setSeenQ] = useState(q);
+  const written = useRef(null); // a q the debounce below has written but this render hasn't seen yet
+
+  // Back and Forward change q without any typing: show that search instead of writing the old one back.
+  if (q !== seenQ) {
+    setSeenQ(q);
+    if (q === written.current) written.current = null; // our own write arriving
+    else if (search.trim() !== q) setSearch(q);
+  }
 
   useEffect(() => {
     const t = setTimeout(() => {
       if (search.trim() === q) return;
+      written.current = search.trim();
       setParams(p => { const n = new URLSearchParams(p); if (search.trim()) n.set('q', search.trim()); else n.delete('q'); return n; }, { replace: true });
     }, 250);
     return () => clearTimeout(t);

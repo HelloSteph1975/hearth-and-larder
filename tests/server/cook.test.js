@@ -117,3 +117,19 @@ it('restoring a cook log takes only what is left if the shelves changed meanwhil
   await h().delete(`/api/cook-log/${log.id}`);
   expect((await h().get(`/api/items/${item.id}`)).body.batches[0]).toMatchObject({ quantity: 1, used_up_at: null });
 });
+
+it('shares stock between repeated ingredient lines in the preview and the cook', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const item = (await h().post('/api/items').send({ store_id: 3, name: 'Flour', unit: 'cup',
+    first_batch: { quantity: 3, unit: 'cup', use_by: '2026-11-01' } })).body;
+  await h().post('/api/batches').send({ item_id: item.id, quantity: 5, unit: 'cup', use_by: '2026-12-01' });
+  const { id } = (await h().post('/api/recipes').send({ title: 'Pie', servings: 1, ingredients: [
+    { name: 'Flour', quantity: 2, unit: 'cup', section: 'Dough' }, { name: 'Flour', quantity: 2, unit: 'cup', section: 'Filling' }] })).body;
+  const preview = (await h().post(`/api/recipes/${id}/cook/preview`).send({ servings: 1 })).body;
+  expect(preview.deductions.map(d => [d.take, d.available])).toEqual([[2, 3], [1, 1], [1, 5]]);
+  await h().post(`/api/recipes/${id}/cook`).send({ servings: 1, cooked_on: '2026-10-07',
+    deductions: preview.deductions.map(d => ({ batch_id: d.batch_id, take: d.take })) });
+  const batches = (await h().get(`/api/items/${item.id}`)).body.batches.map(b => b.quantity).sort();
+  expect(batches).toEqual([0, 4]);
+});

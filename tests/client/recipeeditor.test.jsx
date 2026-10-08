@@ -113,3 +113,19 @@ it('does not ask after a successful save', async () => {
   expect(await screen.findByText('detail page')).toBeInTheDocument();
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 });
+
+it('asks before saving over a pasted list that was never turned into ingredients', async () => {
+  const saves = setup('/recipes/new');
+  await userEvent.type(await screen.findByLabelText('Title'), 'Pie');
+  await userEvent.type(screen.getByLabelText('Paste a list'), '2 cups flour');
+  await userEvent.click(screen.getByRole('button', { name: 'Add to the recipe box' }));
+  const dlg = await screen.findByRole('dialog');
+  expect(within(dlg).getByText('Discard the pasted list?')).toBeInTheDocument();
+  await userEvent.click(within(dlg).getByRole('button', { name: 'Keep it' }));
+  expect(saves).toHaveLength(0);
+  expect(screen.getByLabelText('Paste a list')).toHaveValue('2 cups flour');
+  await userEvent.click(screen.getByRole('button', { name: 'Add to the recipe box' }));
+  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Discard and save' }));
+  expect(await screen.findByText('detail page')).toBeInTheDocument();
+  expect(saves).toHaveLength(1);
+});

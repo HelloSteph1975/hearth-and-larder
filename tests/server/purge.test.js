@@ -70,3 +70,32 @@ it('purges old cook logs and batches that have cook deductions', async () => {
   expect(db.prepare('SELECT COUNT(*) n FROM cook_deductions').get().n).toBe(0);
   expect(db.prepare('SELECT COUNT(*) n FROM items').get().n).toBe(1);
 });
+
+it('keeps photo files that a kept backup still needs', async () => {
+  const { backupNow } = await import('../../server/services/backup.js');
+  const { purgeTrash } = await import('../../server/services/purge.js');
+  t = makeTestContext();
+  const db = t.ctx.db;
+  const rid = db.prepare("INSERT INTO recipes (title) VALUES ('Old')").run().lastInsertRowid;
+  const add = name => db.prepare("INSERT INTO photos (owner_type, owner_id, filename) VALUES ('recipe', ?, ?)").run(rid, name);
+  add('1-aaaaaaaa.jpg');
+  add('2-bbbbbbbb.jpg');
+  backupNow(db, t.dataDir, new Date('2026-07-15T12:00:00'));
+  add('3-cccccccc.jpg');
+  db.prepare('UPDATE recipes SET deleted_at = ?').run(OLD);
+  db.prepare('UPDATE photos SET deleted_at = ?').run(OLD);
+  const photos = path.join(t.dataDir, 'photos');
+  fs.writeFileSync(path.join(photos, '1-aaaaaaaa.jpg'), 'x'); // still in the live folder
+  fs.writeFileSync(path.join(photos, '_trash', '2-bbbbbbbb.jpg'), 'x');
+  fs.writeFileSync(path.join(photos, '_trash', '3-cccccccc.jpg'), 'x');
+  purgeSoftDeleted(db, t.dataDir, { now: NOW });
+  expect(db.prepare('SELECT COUNT(*) n FROM photos').get().n).toBe(0);
+  // The backup's photos wait in the trash; the one no backup knows about is gone.
+  expect(fs.readdirSync(path.join(photos, '_trash')).sort()).toEqual(['1-aaaaaaaa.jpg', '2-bbbbbbbb.jpg']);
+  expect(fs.existsSync(path.join(photos, '1-aaaaaaaa.jpg'))).toBe(false);
+  const old = new Date(NOW - 40 * 86400000);
+  for (const f of fs.readdirSync(path.join(photos, '_trash'))) fs.utimesSync(path.join(photos, '_trash', f), old, old);
+  expect(purgeTrash(t.dataDir, 30, NOW)).toBe(0);
+  fs.rmSync(path.join(t.dataDir, 'backups'), { recursive: true });
+  expect(purgeTrash(t.dataDir, 30, NOW)).toBe(2);
+});

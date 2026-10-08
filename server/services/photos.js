@@ -39,17 +39,6 @@ export function untrashLivePhotos(db, dataDir) {
   return n;
 }
 
-export function purgeTrash(dataDir, olderThanDays = 30, now = Date.now()) {
-  const dir = path.join(dataDir, 'photos', '_trash');
-  if (!fs.existsSync(dir)) return 0;
-  let n = 0;
-  for (const f of fs.readdirSync(dir)) {
-    const p = path.join(dir, f);
-    if (now - fs.statSync(p).mtimeMs > olderThanDays * 86400000) { fs.rmSync(p, { force: true }); n++; }
-  }
-  return n;
-}
-
 export function cascadeDeletePhotos(ctx, ownerType, ownerId, stamp) {
   const rows = ctx.db.prepare('SELECT * FROM photos WHERE owner_type = ? AND owner_id = ? AND deleted_at IS NULL').all(ownerType, ownerId);
   ctx.db.prepare('UPDATE photos SET deleted_at = ? WHERE owner_type = ? AND owner_id = ? AND deleted_at IS NULL').run(stamp, ownerType, ownerId);

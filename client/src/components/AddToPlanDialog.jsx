@@ -11,10 +11,11 @@ export const SLOTS = ['breakfast', 'lunch', 'supper', 'snack'];
 export const SLOT_LABEL = { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack' };
 
 // With `entry`, edits that plan entry (PATCH) instead of adding a new one.
-export function AddToPlanDialog({ open, recipe, recipes, initial, entry, onClose, onSaved }) {
+// `servings` starts a new entry at that many (the recipe page passes what it is scaled to).
+export function AddToPlanDialog({ open, recipe, servings, recipes, initial, entry, onClose, onSaved }) {
   const defaults = () => (entry
     ? { date: entry.date, slot: entry.slot, recipe_id: entry.recipe_id ?? '', servings: entry.servings ?? '', note: entry.note ?? '' }
-    : { date: initial?.date ?? todayISO(), slot: initial?.slot ?? 'supper', recipe_id: recipe?.id ?? '', servings: recipe?.servings ?? '', note: '' });
+    : { date: initial?.date ?? todayISO(), slot: initial?.slot ?? 'supper', recipe_id: recipe?.id ?? '', servings: servings ?? recipe?.servings ?? '', note: '' });
   const [form, setForm] = useState(defaults);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);

@@ -40,3 +40,24 @@ it('can-make sorts recipes by fewest missing', async () => {
   expect(list.map(r => r.title)).toEqual(['Porridge', GALETTE.title]);
   expect(list[0].status.can_make).toBe(true);
 });
+
+it('counts repeated ingredient lines against the same stock', async () => {
+  t = makeTestContext();
+  await stock(t.http, 3, 'Flour', 'cup', 3);
+  const { id } = (await t.http().post('/api/recipes').send({ title: 'Pie', servings: 1, ingredients: [
+    { name: 'Flour', quantity: 2, unit: 'cup' }, { name: 'Flour', quantity: 2, unit: 'cup' }, { name: 'flour', quantity: 1, unit: 'cup', optional: true }] })).body;
+  const s = (await t.http().get(`/api/recipes/${id}`)).body.status;
+  expect(s.ingredients.map(i => [i.status, i.have])).toEqual([['have', 3], ['partial', 1], ['missing', 0]]);
+  expect(s.can_make).toBe(false);
+  expect(s.missing_names).toEqual(['Flour']);
+});
+
+it('serves required lines before optional ones when stock is shared', async () => {
+  t = makeTestContext();
+  await stock(t.http, 3, 'Butter', 'cup', 1);
+  const { id } = (await t.http().post('/api/recipes').send({ title: 'Toast', servings: 1, ingredients: [
+    { name: 'Butter', quantity: 1, unit: 'cup', optional: true }, { name: 'Butter', quantity: 1, unit: 'cup' }] })).body;
+  const s = (await t.http().get(`/api/recipes/${id}`)).body.status;
+  expect(s.ingredients.map(i => i.status)).toEqual(['missing', 'have']);
+  expect(s.can_make).toBe(true);
+});

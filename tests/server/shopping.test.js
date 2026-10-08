@@ -145,3 +145,15 @@ it('puts away into an existing item as a new batch', async () => {
   expect(detail.batches).toHaveLength(2);
   expect(detail.quantity).toBe(18);
 });
+
+it('a rebuild leaves deleted plan rows alone, so their Undo still works', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const rec = (await h().post('/api/recipes').send({ title: 'Soup', servings: 1, ingredients: [{ name: 'Leeks', quantity: 2, unit: 'each' }] })).body;
+  await h().post('/api/plan').send({ date: '2026-10-08', slot: 'supper', recipe_id: rec.id });
+  const [leeks] = (await h().post('/api/shopping/build').send({ from: '2026-10-06', to: '2026-10-12' })).body;
+  const del = (await h().delete(`/api/shopping/${leeks.id}`)).body;
+  await h().post('/api/shopping/build').send({ from: '2026-10-06', to: '2026-10-12' });
+  expect((await h().post(del.restore)).status).toBe(200);
+  expect((await h().get('/api/shopping')).body.map(i => i.id)).toContain(leeks.id);
+});

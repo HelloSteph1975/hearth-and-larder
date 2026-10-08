@@ -57,3 +57,27 @@ it('reset wipes and reseeds the demo folder', () => {
   seedDemo(t.ctx, { reset: true });
   expect(t.ctx.db.prepare('SELECT COUNT(*) n FROM items WHERE deleted_at IS NULL').get().n).toBeGreaterThanOrEqual(18);
 });
+
+it('refuses to reset the folder config.json names as the real data folder', async () => {
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { assertDemoFolder } = await import('../../server/demo/seed.js');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-root-'));
+  try {
+    const real = path.join(root, 'Kitchen');
+    fs.mkdirSync(real);
+    fs.writeFileSync(path.join(root, 'config.json'), JSON.stringify({ dataDir: real }));
+    expect(() => assertDemoFolder({ demo: true, dataDir: `${real}${path.sep}` }, {}, root)).toThrow(/real data folder/);
+    expect(() => assertDemoFolder({ demo: true, dataDir: path.join(real, 'photos') }, {}, root)).toThrow(/real data folder/);
+    // A second name for the same folder (a junction or symlink) is caught too.
+    const alias = path.join(root, 'Alias');
+    fs.symlinkSync(real, alias, 'junction');
+    expect(() => assertDemoFolder({ demo: true, dataDir: alias }, {}, root)).toThrow(/real data folder/);
+    expect(() => assertDemoFolder({ demo: true, dataDir: path.join(root, 'Demo') }, {}, root)).not.toThrow();
+    fs.writeFileSync(path.join(root, 'config.json'), '{ broken');
+    expect(() => assertDemoFolder({ demo: true, dataDir: path.join(root, 'Demo') }, {}, root)).toThrow(/config\.json/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

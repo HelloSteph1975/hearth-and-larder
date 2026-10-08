@@ -3,6 +3,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { HttpError } from '../http.js';
 import { untrashLivePhotos } from './photos.js';
+import { photoFilenamesIn } from '../db/backups.js';
 
 const pad = n => String(n).padStart(2, '0');
 const localDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -32,6 +33,17 @@ export function listBackups(dataDir) {
     const st = fs.statSync(path.join(dir, name));
     return { name, size: st.size, modified: st.mtime.toISOString() };
   }).sort((a, b) => b.modified.localeCompare(a.modified) || b.name.localeCompare(a.name));
+}
+
+// Every photo file a kept backup refers to. Purges leave these alone so restoring that backup still has its pictures.
+export function photosInBackups(dataDir) {
+  const keep = new Set();
+  for (const b of listBackups(dataDir)) {
+    try {
+      for (const f of photoFilenamesIn(path.join(dirOf(dataDir), b.name))) keep.add(f);
+    } catch { /* an unreadable backup can't be restored either */ }
+  }
+  return keep;
 }
 
 export function rotateBackups(dataDir, { keepDays = 30, keepMin = 5, now = Date.now() } = {}) {

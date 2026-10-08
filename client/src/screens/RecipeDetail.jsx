@@ -145,7 +145,7 @@ function RecipeDetailInner({ id }) {
         </section>
       </div>
       <CookDialog open={cooking} recipe={r} servings={s} onClose={() => setCooking(false)} onDone={() => { setCooking(false); refresh(); }} onChanged={refresh} />
-      <AddToPlanDialog open={planning} recipe={r} onClose={() => setPlanning(false)} />
+      <AddToPlanDialog open={planning} recipe={r} servings={s} onClose={() => setPlanning(false)} />
     </article>
   );
 }

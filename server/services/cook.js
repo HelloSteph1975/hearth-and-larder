@@ -12,6 +12,8 @@ export function proposeDeductions(db, recipeId, servings) {
   const index = stockIndex(db);
   const deductions = [];
   const unmatched = [];
+  // What each batch has left after earlier lines, so a name on two lines (dough and filling) isn't counted twice.
+  const left = new Map();
   for (const ing of recipe.ingredients) {
     if (ing.is_staple) continue;
     const batches = index.get(normalizeName(ing.name)) ?? [];
@@ -20,14 +22,18 @@ export function proposeDeductions(db, recipeId, servings) {
     let remaining = toBase(need, ing.unit);
     for (const b of batches) {
       if (remaining.amount <= 1e-9) break;
-      const avail = toBase(b.quantity, b.unit);
+      const has = left.get(b.batch_id) ?? b.quantity;
+      if (has <= 0) continue;
+      const avail = toBase(has, b.unit);
       if (avail.family !== remaining.family) continue;
       const takeBase = Math.min(avail.amount, remaining.amount);
       const consumed = takeBase >= avail.amount;
+      const take = consumed ? has : round(fromBase(takeBase, b.unit), 4);
       remaining = { ...remaining, amount: remaining.amount - takeBase };
+      left.set(b.batch_id, consumed ? 0 : round(has - take, 4));
       deductions.push({
         ingredient_id: ing.id, ingredient_name: ing.name, batch_id: b.batch_id, item_name: b.item_name,
-        take: consumed ? b.quantity : round(fromBase(takeBase, b.unit), 4), unit: b.unit, available: b.quantity,
+        take, unit: b.unit, available: has,
       });
     }
   }

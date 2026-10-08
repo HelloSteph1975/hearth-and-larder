@@ -4,6 +4,50 @@ Hearth & Larder is a small kitchen keeper that runs on your own computer. It tra
 
 ![The Hearth home screen, showing what to use soon, what is running low and today's table](docs/screenshots/hearth.png)
 
+## Install it with a coding assistant
+
+You don't need to be technical. A coding assistant can do the install for you, and it explains each step as it goes.
+
+What you need first:
+
+- Windows 10 or 11.
+- [Node.js](https://nodejs.org) 24 or newer (the LTS download is fine).
+- Git, if you like. It is optional, because you can download the repository as a ZIP file instead.
+- Google Chrome, which is recommended.
+- A coding assistant, such as Claude Code or Codex.
+
+Then:
+
+1. Download this repository as a ZIP and unzip it, or clone it with Git. Put the folder somewhere you will keep it, and avoid OneDrive folders, because the install adds thousands of files.
+2. Open that folder in your coding assistant.
+3. Paste this prompt:
+
+```
+Please install Hearth & Larder from this folder on my Windows computer. Follow AGENTS.md. Set up the daily 5:30 AM start and 9:30 PM backup-and-stop schedule and the Desktop shortcut, then open it so I can see it works.
+```
+
+The assistant will ask your permission before it runs commands, including before it adds the scheduled tasks and the shortcut. Your data stays in `Documents\Hearth & Larder Data`, and the assistant is told never to delete or reset it.
+
+Other prompts you can paste later:
+
+To update to a newer version:
+
+```
+Please update Hearth & Larder to the newest version in this folder. Follow AGENTS.md and keep my data and settings.
+```
+
+To uninstall and keep your data:
+
+```
+Please uninstall Hearth & Larder from my computer. Follow AGENTS.md and keep my data.
+```
+
+If it won't open:
+
+```
+Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don't touch my data.
+```
+
 ## What it does
 
 - Keeps three stores (Larder, Root Cellar and Pantry), each with items, batches, use-by dates, photos and notes. You can move an item to another store.
@@ -14,7 +58,7 @@ Hearth & Larder is a small kitchen keeper that runs on your own computer. It tra
 - Builds a shopping list from the plan, leaving off anything the larder already covers or that you have already ticked.
 - Takes ingredients off the shelves when you tell it you cooked a recipe. Each recipe keeps a cooking history, and deleting an entry puts the ingredients back.
 - Lets you undo a delete for a few seconds. Deleted things are kept for 30 days before they are purged.
-- Backs up your data every night.
+- Backs up your data every night once the Windows schedule is installed, and when the app starts if the last backup is over a day old.
 
 | | |
 |---|---|
@@ -28,7 +72,7 @@ Hearth & Larder is a small kitchen keeper that runs on your own computer. It tra
 - Node 24 or newer.
 - Chrome is recommended. The Desktop shortcut opens a Chrome app window and falls back to your default browser.
 
-## Install
+## Install it yourself
 
 Download or clone this repository, open a terminal in its folder, and run:
 

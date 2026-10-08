@@ -80,7 +80,9 @@ export function returnCookStock(db, cookLogId) {
   for (const d of deductionsFor(db, cookLogId)) {
     const b = anyBatch(db, d.batch_id);
     if (!b) continue;
-    setBatchStock(db, b.id, round(b.quantity + d.amount, 4), d.was_used_up ? null : b.used_up_at);
+    const quantity = round(b.quantity + d.amount, 4);
+    // Stock back on the shelf means the batch is live again, whoever marked it used up.
+    setBatchStock(db, b.id, quantity, quantity > 0 ? null : b.used_up_at);
   }
 }
 

@@ -15,7 +15,7 @@ import { useDeleteWithUndo } from '../components/useDeleteWithUndo.jsx';
 import { useToast } from '../components/ToastProvider.jsx';
 import { AddToPlanDialog } from '../components/AddToPlanDialog.jsx';
 import { shortfalls, addShortfallsToList, shortfallMessage } from '../lib/shopping.js';
-import { PrintButton, PrintSheet } from '../components/Print.jsx';
+import { PrintButton, PrintGate } from '../components/Print.jsx';
 import { RecipePrint } from '../components/PrintViews.jsx';
 import { usePrint } from '../lib/usePrint.js';
 import { CookDialog } from './CookDialog.jsx';
@@ -54,12 +54,16 @@ function RecipeDetailInner({ id }) {
   const nav = useNavigate();
   const del = useDeleteWithUndo();
   const toast = useToast();
-  const { data: r, error, loading, reload } = useApi(`/api/recipes/${id}${servings ? `?servings=${servings}` : ''}`, { keepPrevious: true });
+  const recipeUrl = `/api/recipes/${id}${servings ? `?servings=${servings}` : ''}`;
+  const { data: r, error, loading, reload } = useApi(recipeUrl, { keepPrevious: true });
   const { data: history, reload: reloadHistory } = useApi(`/api/cook-log?recipe_id=${id}`);
   // Cooking changes the shelves, so refresh this page and any open item lists.
   const refresh = () => { reload(); reloadHistory(); window.dispatchEvent(new Event('hl:items-changed')); };
   // Print once the refetch for the chosen servings has landed, so the amounts match the label.
-  const printer = usePrint({ ready: Boolean(r) && !loading && (servings == null || r.status.servings === servings) });
+  const printer = usePrint({
+    ready: Boolean(r) && !loading && (servings == null || r.status.servings === servings),
+    failed: Boolean(error), viewKey: recipeUrl,
+  });
   if (error) return <p className="error-card card">{error.message}</p>;
   if (!r) return <div className="skeleton-page skeleton skeleton-card" aria-busy="true" />;
   const s = servings ?? r.status.servings; // local state so quick double-clicks don't race the refetch
@@ -151,7 +155,7 @@ function RecipeDetailInner({ id }) {
         </section>
       </div>
       <CookDialog open={cooking} recipe={r} servings={s} onClose={() => setCooking(false)} onDone={() => { setCooking(false); refresh(); }} onChanged={refresh} />
-      {printer.active && <PrintSheet what="Recipe card"><RecipePrint recipe={r} servings={r.status.servings} /></PrintSheet>}
+      <PrintGate printer={printer} what="Recipe card">{() => <RecipePrint recipe={r} servings={r.status.servings} />}</PrintGate>
       <AddToPlanDialog open={planning} recipe={r} servings={s} onClose={() => setPlanning(false)} />
     </article>
   );

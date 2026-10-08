@@ -11,7 +11,7 @@ import { useStores } from '../components/StoresProvider.jsx';
 import { Checkbox, Select } from '../components/Field.jsx';
 import { useApi } from '../lib/useApi.js';
 import { SOURCES, SOURCE_LABELS } from '../lib/options.js';
-import { PrintButton, PrintSheet } from '../components/Print.jsx';
+import { PrintButton, PrintGate } from '../components/Print.jsx';
 import { InventoryPrint } from '../components/PrintViews.jsx';
 import { usePrint } from '../lib/usePrint.js';
 import { ItemForm } from './ItemForm.jsx';
@@ -48,7 +48,8 @@ export function StoreScreen() {
   const params = new URLSearchParams({ store_id: storeId, sort: filters.sort });
   for (const k of ['q', 'category_id', 'location_id', 'source']) if (filters[k]) params.set(k, filters[k]);
   if (filters.low) params.set('low', '1');
-  const { data: items, loading, error, reload } = useApi(`/api/items?${params}`, { keepPrevious: true });
+  const itemsUrl = `/api/items?${params}`;
+  const { data: items, loading, error, reload } = useApi(itemsUrl, { keepPrevious: true });
 
   // An Undo from the item page (after we navigated here) brings the item back into this list.
   useEffect(() => {
@@ -61,7 +62,7 @@ export function StoreScreen() {
   const clear = () => { setSearch(''); setFilters(NO_FILTERS); };
   const opt = rows => (rows ?? []).map(r => ({ value: r.id, label: r.name }));
 
-  const printer = usePrint({ ready: Boolean(items) && !loading });
+  const printer = usePrint({ ready: Boolean(items) && !loading, failed: Boolean(error), viewKey: itemsUrl });
 
   if (!store && storesLoading) return <SkeletonCards />;
   if (!store) return <NotFound />;
@@ -127,9 +128,7 @@ export function StoreScreen() {
         </div>
       )}
 
-      {printer.active && items && (
-        <PrintSheet what="Inventory"><InventoryPrint store={store} items={items} filters={filterNotes} /></PrintSheet>
-      )}
+      <PrintGate printer={printer} what="Inventory">{() => <InventoryPrint store={store} items={items} filters={filterNotes} />}</PrintGate>
 
       <ItemForm open={adding} storeId={store.id} onClose={() => setAdding(false)}
         onSaved={saved => { setAdding(false); reload(); if (saved?.id) navigate(`/item/${saved.id}`); }} />

@@ -151,3 +151,105 @@ it('puts each planned meal under its day and meal on the printed week', async ()
   expect(within(rowFor('Breakfast')).getAllByRole('cell')[0]).toHaveTextContent('Leftover porridge');
   expect(within(table).queryByRole('button')).not.toBeInTheDocument();
 });
+
+/* ---------- Printing stays in step with the data on screen ---------- */
+
+import { act } from '@testing-library/react';
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+
+it('Ctrl+P during a week change prints a loading note, never last week under new dates', async () => {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart(todayISO(), 'monday'), i));
+  const nextWeek = deferred();
+  global.fetch = vi.fn(async url => {
+    if (url === '/api/settings') return json({ week_start: 'monday' });
+    if (url === `/api/plan?from=${days[0]}&to=${days[6]}`) return json([{ id: 1, date: days[2], slot: 'supper', recipe_id: 5, recipe_title: 'Root cellar hash' }]);
+    if (url.startsWith('/api/plan?')) return nextWeek.promise;
+    return json([]);
+  });
+  renderAt('/planner', '/planner', <Planner />);
+  await screen.findByRole('link', { name: 'Root cellar hash' });
+  await userEvent.click(screen.getByRole('button', { name: 'Next week' }));
+  act(() => { window.dispatchEvent(new Event('beforeprint')); });
+  expect(sheet()).toHaveTextContent('Still loading');
+  expect(within(sheet()).queryByText('Root cellar hash')).not.toBeInTheDocument();
+  await act(async () => nextWeek.resolve(json([{ id: 2, date: addDays(days[0], 7), slot: 'lunch', recipe_id: 6, recipe_title: 'Bean soup' }])));
+  await waitFor(() => expect(within(sheet()).getByText('Bean soup')).toBeInTheDocument());
+  expect(within(sheet()).queryByText('Root cellar hash')).not.toBeInTheDocument();
+  act(() => { window.dispatchEvent(new Event('afterprint')); });
+  expect(screen.queryByTestId('print-sheet')).not.toBeInTheDocument();
+});
+
+it('drops a queued print when the view changes before its data arrives', async () => {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart(todayISO(), 'monday'), i));
+  const later = deferred();
+  global.fetch = vi.fn(async url => {
+    if (url === '/api/settings') return json({ week_start: 'monday' });
+    if (url === `/api/plan?from=${days[0]}&to=${days[6]}`) return json([]);
+    if (url.startsWith('/api/plan?')) return later.promise.then(d => json(d));
+    return json([]);
+  });
+  const print = spyPrint();
+  renderAt('/planner', '/planner', <Planner />);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled());
+  await userEvent.click(screen.getByRole('button', { name: 'Next week' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Print' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Next week' }));
+  await act(async () => later.resolve([]));
+  await new Promise(r => setTimeout(r, 100));
+  expect(print).not.toHaveBeenCalled();
+});
+
+it('cancels a queued print when loading fails, so a later load does not open the dialog', async () => {
+  const pumpkin = { id: 1, name: 'Pumpkin', quantity: 1, unit: 'each', sources: [], is_low: true };
+  const lowOnly = deferred();
+  global.fetch = vi.fn(async url => {
+    if (url === '/api/stores') return json([{ id: 3, name: 'Root Cellar', icon: 'potato' }]);
+    if (url.startsWith('/api/items?')) return url.includes('low=1') ? lowOnly.promise : json([pumpkin]);
+    return json([]);
+  });
+  const print = spyPrint();
+  renderAt('/store/3', '/store/:storeId', <StoreScreen />);
+  await screen.findByText('Pumpkin');
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Running low only' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Print' }));
+  await act(async () => lowOnly.resolve(json({ error: 'The cellar door is stuck.' }, 500)));
+  expect(await screen.findByText('The cellar door is stuck.')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Running low only' }));
+  expect(await screen.findByText('Pumpkin')).toBeInTheDocument();
+  await new Promise(r => setTimeout(r, 100));
+  expect(print).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('print-sheet')).not.toBeInTheDocument();
+});
+
+it('holds card printing while a filter loads and only prints cards the new list still shows', async () => {
+  const all = [{ id: 1, title: 'Apple butter', tags: [] }, { id: 2, title: 'Bean soup', tags: [] }, { id: 3, title: 'Corn bread', tags: [] }];
+  const favorites = deferred();
+  global.fetch = vi.fn(async url => {
+    if (url === '/api/recipes?') return json(all);
+    if (url.startsWith('/api/recipes?favorite=1')) return favorites.promise;
+    if (url === '/api/recipes/tags') return json([]);
+    const m = url.match(/^\/api\/recipes\/(\d+)$/);
+    if (m) return json({ ...all.find(x => x.id === Number(m[1])), photos: [], steps: [], ingredients: [], status: { servings: 4, ingredients: [] } });
+    return json([]);
+  });
+  const print = spyPrint();
+  renderAt('/recipes', '/recipes', <RecipeBox />);
+  await userEvent.click(await screen.findByRole('button', { name: 'Print cards' }));
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Select Apple butter for printing' }));
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Select Corn bread for printing' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Favorites' }));
+  expect(screen.getByRole('button', { name: 'Print 2 cards' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Print index' })).toBeDisabled();
+  await act(async () => favorites.resolve(json([all[0], all[1]])));
+  await userEvent.click(await screen.findByRole('button', { name: 'Print 1 card' }));
+  await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+  const urls = global.fetch.mock.calls.map(([u]) => u);
+  expect(urls).toContain('/api/recipes/1');
+  expect(urls).not.toContain('/api/recipes/3');
+  expect(within(sheet()).getAllByRole('article').map(a => a.getAttribute('aria-label'))).toEqual(['Apple butter']);
+});

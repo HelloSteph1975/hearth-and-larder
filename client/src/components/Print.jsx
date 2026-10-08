@@ -46,3 +46,17 @@ export function PrintSheet({ what, children, className = '', bare = false }) {
     document.body,
   );
 }
+
+// Renders a screen's print sheet only while printing, and only from data that matches the screen.
+// `children` is a function so it never runs against data that hasn't arrived.
+export function PrintGate({ printer, what, className, bare = false, children }) {
+  if (!printer.active) return null;
+  if (!printer.ready) {
+    return (
+      <PrintSheet what={what}>
+        <p className="print-wait" role="status">Still loading. Please print again in a moment.</p>
+      </PrintSheet>
+    );
+  }
+  return <PrintSheet what={what} className={className} bare={bare}>{children()}</PrintSheet>;
+}

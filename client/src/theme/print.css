@@ -55,6 +55,7 @@
   }
   .print-sub { margin: 2pt 0 10pt; color: var(--ink-soft); font-size: 9.5pt; }
   .print-quiet { color: var(--ink-soft); }
+  .print-wait { margin: 24pt 0; font-family: var(--font-hand); font-size: 16pt; color: var(--ink-soft); }
   .print-sheet h3 {
     font-family: var(--font-head); font-weight: 600; font-size: 12.5pt; color: var(--brick);
     margin: 12pt 0 5pt; padding-bottom: 2pt; border-bottom: .75pt solid var(--print-rule);

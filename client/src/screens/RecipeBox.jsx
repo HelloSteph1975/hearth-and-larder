@@ -5,7 +5,7 @@ import { PageHeader } from '../components/PageHeader.jsx';
 import { Button } from '../components/Button.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
 import { RecipeCard } from '../components/RecipeCard.jsx';
-import { PrintButton, PrintFooter, PrintHeader, PrintSheet } from '../components/Print.jsx';
+import { PrintButton, PrintFooter, PrintGate, PrintHeader } from '../components/Print.jsx';
 import { RecipeIndexPrint, RecipePrint } from '../components/PrintViews.jsx';
 import { useToast } from '../components/ToastProvider.jsx';
 import { useApi } from '../lib/useApi.js';
@@ -46,7 +46,8 @@ export function RecipeBox() {
   const url = new URLSearchParams(FILTER_PARAM[filter] ?? '');
   if (q) url.set('q', q);
   if (tag) url.set('tag', tag);
-  const { data: recipes, loading, error, reload } = useApi(`/api/recipes?${url}`, { keepPrevious: true });
+  const listUrl = `/api/recipes?${url}`;
+  const { data: recipes, loading, error, reload } = useApi(listUrl, { keepPrevious: true });
   const { data: tags, reload: reloadTags } = useApi('/api/recipes/tags');
 
   // An Undo from the recipe page (after we navigated here) brings the recipe back into this list.
@@ -60,26 +61,43 @@ export function RecipeBox() {
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState(() => new Set());
   const [printMode, setPrintMode] = useState('index');
-  const [cards, setCards] = useState(null);
+  const [cards, setCards] = useState(null); // { key: the list url they were chosen from, list }
+  const cardsRequest = useRef(0);
+  const listReady = Boolean(recipes) && !loading;
   const printer = usePrint({
-    ready: printMode === 'cards' ? Boolean(cards) : Boolean(recipes) && !loading,
-    onAfter: () => { setPrintMode('index'); setCards(null); },
+    ready: printMode === 'cards' ? listReady && cards?.key === listUrl : listReady,
+    failed: Boolean(error),
+    viewKey: listUrl,
   });
-  // Only cards still in the list count, so a search that hides a ticked card leaves it off the printout.
-  const chosen = (recipes ?? []).filter(r => picked.has(r.id));
+  // Once nothing is printing or queued (printed, cancelled, or dropped because the list changed),
+  // go back to the index, so Ctrl+P never prints cards picked from an older list.
+  const printIdle = !printer.active && !printer.preparing;
+  useEffect(() => {
+    if (!printIdle) return;
+    cardsRequest.current += 1;
+    setPrintMode('index');
+    setCards(null);
+  }, [printIdle]);
+  // Only cards in the list as it stands count, so a search that hides a ticked card leaves it off.
+  // While a new list loads, the old one is still on screen, so card printing waits for it.
+  const ticked = (recipes ?? []).filter(r => picked.has(r.id));
+  const chosen = listReady ? ticked : [];
   const toggle = id => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const selectAll = () => setPicked(new Set((recipes ?? []).map(r => r.id)));
   const printIndex = () => { setPrintMode('index'); setCards(null); printer.print(); };
   async function printCards() {
-    if (!chosen.length) return;
+    if (!listReady || !chosen.length) return;
+    const ticket = ++cardsRequest.current;
+    const key = listUrl;
     setPrintMode('cards');
     setCards(null);
     printer.print();
     try {
-      setCards(await Promise.all(chosen.map(r => api.get(`/api/recipes/${r.id}`))));
+      const list = await Promise.all(chosen.map(r => api.get(`/api/recipes/${r.id}`)));
+      if (ticket === cardsRequest.current) setCards({ key, list });
     } catch (err) {
+      if (ticket !== cardsRequest.current) return;
       printer.cancel();
-      setPrintMode('index');
       toast?.show({ message: err.message });
     }
   }
@@ -95,18 +113,18 @@ export function RecipeBox() {
   return (
     <>
       <PageHeader title="Recipe Box" note={note} actions={<>
-        {recipes?.length > 0 && <PrintButton onClick={printIndex} busy={printer.preparing && printMode === 'index'}>Print index</PrintButton>}
+        {recipes?.length > 0 && <PrintButton onClick={printIndex} busy={printer.preparing && printMode === 'index'} disabled={!listReady}>Print index</PrintButton>}
         {recipes?.length > 0 && <Button variant="ghost" icon={SquareCheck} aria-pressed={selecting} onClick={() => setSelecting(v => !v)}>Print cards</Button>}
         <Button as={Link} to="/can-make" variant="secondary">What can I make?</Button>{newButton}
       </>} />
       {selecting && (
         <section className="select-bar card card-butter no-print" aria-label="Choose cards to print">
           <p className="hand select-hint">Tick the cards to print, one to a page.</p>
-          <span className="select-count">{chosen.length} selected</span>
+          <span className="select-count">{ticked.length} selected</span>
           <Button size="sm" variant="secondary" onClick={selectAll}>Select all</Button>
           <Button size="sm" variant="ghost" onClick={() => setPicked(new Set())} disabled={!picked.size}>Clear</Button>
           <PrintButton size="sm" variant="primary" onClick={printCards} busy={preparingCards} disabled={!chosen.length}>
-            Print {chosen.length === 1 ? '1 card' : `${chosen.length} cards`}
+            Print {ticked.length === 1 ? '1 card' : `${ticked.length} cards`}
           </PrintButton>
           <Button size="sm" variant="ghost" onClick={() => setSelecting(false)}>Done</Button>
           <span className="visually-hidden" role="status">{preparingCards ? 'Preparing the cards for printing' : ''}</span>
@@ -153,19 +171,17 @@ export function RecipeBox() {
         </div>
       )}
 
-      {printer.active && printMode === 'index' && recipes && (
-        <PrintSheet what="Recipe index"><RecipeIndexPrint recipes={recipes} filters={indexNotes} /></PrintSheet>
+      {printMode === 'index' && (
+        <PrintGate printer={printer} what="Recipe index">{() => <RecipeIndexPrint recipes={recipes} filters={indexNotes} />}</PrintGate>
       )}
-      {printer.active && printMode === 'cards' && cards && (
-        <PrintSheet bare className="is-cards">
-          {cards.map(c => (
+      {printMode === 'cards' && (
+        <PrintGate printer={printer} what="Recipe cards" bare className="is-cards">{() => cards.list.map(c => (
             <section className="print-page" key={c.id}>
               <PrintHeader what="Recipe card" />
               <RecipePrint recipe={c} />
               <PrintFooter />
             </section>
-          ))}
-        </PrintSheet>
+          ))}</PrintGate>
       )}
     </>
   );

@@ -15,17 +15,22 @@ export function imagesSettled(root, timeout = 3000) {
 }
 
 // Print sheets are mounted only while printing, so the screen and its tests never carry a second copy.
-// `active` says when to render the sheet. `print()` mounts it, waits until `ready` is true and its
-// pictures have loaded, then opens the browser's print dialog. Ctrl+P mounts it too, via beforeprint.
-export function usePrint({ ready = true, onAfter } = {}) {
+// `active` says when to render the sheet; `ready` says whether the data behind it matches what the
+// screen shows. Render the sheet only when both are true (PrintGate does this, and prints a
+// "still loading" note otherwise), so Ctrl+P never puts last week's meals under this week's dates.
+// `print()` mounts the sheet, waits for `ready` and the sheet's pictures, then opens the print
+// dialog. A queued print is dropped if loading fails or the view changes (`viewKey`), so a later
+// load can't open the dialog unasked.
+export function usePrint({ ready = true, failed = false, viewKey = '', onAfter } = {}) {
   const [active, setActive] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [pendingKey, setPendingKey] = useState(null);
+  const pending = pendingKey !== null;
   const after = useRef(onAfter);
   useEffect(() => { after.current = onAfter; }, [onAfter]);
 
   useEffect(() => {
     const before = () => flushSync(() => setActive(true));
-    const done = () => { setActive(false); setPending(false); after.current?.(); };
+    const done = () => { setActive(false); setPendingKey(null); after.current?.(); };
     window.addEventListener('beforeprint', before);
     window.addEventListener('afterprint', done);
     return () => {
@@ -34,18 +39,25 @@ export function usePrint({ ready = true, onAfter } = {}) {
     };
   }, []);
 
+  const dropped = pending && (failed || pendingKey !== viewKey);
   useEffect(() => {
-    if (!pending || !ready) return undefined;
+    if (!dropped) return;
+    setPendingKey(null);
+    setActive(false);
+  }, [dropped]);
+
+  useEffect(() => {
+    if (!pending || dropped || !ready) return undefined;
     let live = true;
     nextFrame(() => imagesSettled(document.querySelector('.print-sheet')).then(() => {
       if (!live) return;
-      setPending(false);
+      setPendingKey(null);
       window.print();
     }));
     return () => { live = false; };
-  }, [pending, ready]);
+  }, [pending, dropped, ready]);
 
-  const print = useCallback(() => { setActive(true); setPending(true); }, []);
-  const cancel = useCallback(() => { setActive(false); setPending(false); }, []);
-  return { active, preparing: pending, print, cancel };
+  const print = useCallback(() => { setActive(true); setPendingKey(viewKey); }, [viewKey]);
+  const cancel = useCallback(() => { setActive(false); setPendingKey(null); }, []);
+  return { active, ready: Boolean(ready), preparing: pending && !dropped, print, cancel };
 }

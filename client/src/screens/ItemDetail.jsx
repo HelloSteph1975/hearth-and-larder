@@ -16,7 +16,7 @@ import { useApi } from '../lib/useApi.js';
 import { formatQty, formatMoney } from '../lib/format.js';
 import { prettyDate } from '../lib/dates.js';
 import { SOURCE_LABELS } from '../lib/options.js';
-import { PrintButton, PrintSheet } from '../components/Print.jsx';
+import { PrintButton, PrintGate } from '../components/Print.jsx';
 import { ItemPrint } from '../components/PrintViews.jsx';
 import { usePrint } from '../lib/usePrint.js';
 import { ItemForm } from './ItemForm.jsx';
@@ -72,7 +72,7 @@ export function ItemDetail() {
   const del = useDeleteWithUndo();
   const [editing, setEditing] = useState(false);
   const [batchDialog, setBatchDialog] = useState(null); // { batch? }
-  const printer = usePrint({ ready: Boolean(item) && !loading });
+  const printer = usePrint({ ready: Boolean(item) && !loading, failed: Boolean(error), viewKey: id });
 
   if (error?.status === 404) return <NotFound />;
   if (error) {
@@ -222,7 +222,7 @@ export function ItemDetail() {
         </div>
       </div>
 
-      {printer.active && <PrintSheet what="Item record"><ItemPrint item={item} storeName={store?.name} /></PrintSheet>}
+      <PrintGate printer={printer} what="Item record">{() => <ItemPrint item={item} storeName={store?.name} />}</PrintGate>
 
       <ItemForm open={editing} item={item} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); reload(); window.dispatchEvent(new Event('hl:items-changed')); }} />
       <BatchForm open={Boolean(batchDialog)} item={item} batch={batchDialog?.batch} onClose={() => setBatchDialog(null)}

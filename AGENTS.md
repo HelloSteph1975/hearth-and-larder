@@ -38,8 +38,9 @@ Run `npm run setup`, then `npm start`, and open http://localhost:4193. There are
 ## Uninstall
 
 1. Confirm with the user first, and say that their data will be kept.
-2. Run `npm run uninstall-windows`. It stops the app and removes both scheduled tasks and the Desktop shortcut. It does not touch the data folder.
-3. The app folder can now be removed if the user wants. Leave the data folder in place unless the user explicitly asks to delete it. If they do, remind them that it holds all their items, recipes, photos and backups, and confirm once more.
+2. On Windows, run `npm run uninstall-windows`. It stops the app and removes both scheduled tasks and the Desktop shortcut. On macOS or Linux, run `npm run stop` instead. Neither command touches the data folder.
+3. Before removing the app folder, find the active data path: `HEARTH_DATA_DIR` overrides `dataDir` in `config.json`, which overrides the default `Documents\Hearth & Larder Data`. Resolve the full path. If it is the app folder or inside it, do not remove the app folder. Tell the user why and keep everything.
+4. Otherwise the app folder can be removed if the user wants. Leave the data folder in place unless the user explicitly asks to delete it. If they do, remind them that it holds all their items, recipes, photos and backups, and confirm once more.
 
 ## Troubleshooting
 

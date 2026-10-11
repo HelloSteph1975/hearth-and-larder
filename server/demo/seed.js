@@ -17,6 +17,9 @@ const STORES = {
   Larder: ['Shelf A', 'Shelf B', 'Top Shelf'],
   'Root Cellar': ['Bin 1', 'Bin 2', 'Sand Crate', 'Hanging Braids'],
   Pantry: ['Flour Crocks', 'Spice Rack', 'Bottom Shelf'],
+  // The Refrigerator and Freezer come with their own starter shelves; the demo reuses them.
+  Refrigerator: ['Top shelf', 'Crisper drawer', 'Door'],
+  Freezer: ['Top shelf', 'Bottom drawer'],
 };
 
 // Batch: [qty, source, method, container, count, daysUntilUseBy, price]
@@ -53,6 +56,17 @@ const ITEMS = [
   ['Pantry', 'Dairy & Eggs', 'Milk', 'cup', 'Bottom Shelf', null, [[4, B, AB, null, null, 5, 3.6]]],
   ['Pantry', 'Herbs & Spices', 'Thyme', 'tbsp', 'Spice Rack', null, [[6, HG, 'dehydrated', null, null, 365]]],
   ['Pantry', 'Herbs & Spices', 'Cinnamon', 'tsp', 'Spice Rack', null, [[20, B, AB, null, null, 500, 3.0]]],
+  // Refrigerator
+  ['Refrigerator', 'Dairy & Eggs', 'Buttermilk', 'cup', 'Door', 1, [[3, B, AB, 'quart carton', 1, 5, 2.4]]],
+  ['Refrigerator', 'Dairy & Eggs', 'Sharp cheddar', 'oz', 'Top shelf', 4, [[12, B, AB, null, null, 40, 6.5]]],
+  ['Refrigerator', 'Dairy & Eggs', 'Plain yogurt', 'cup', 'Top shelf', null, [[4, P, 'fermented', 'quart jar', 1, 9]]],
+  ['Refrigerator', 'Herbs & Spices', 'Fresh parsley', 'bunch', 'Crisper drawer', null, [[1, HG, 'other', null, null, 4]]],
+  ['Refrigerator', 'Other', 'Salad greens', 'bag', 'Crisper drawer', null, [[2, HG, 'other', null, null, 3]]],
+  // Freezer
+  ['Freezer', 'Fruit', 'Frozen peaches', 'cup', 'Bottom drawer', 2, [[8, P, 'frozen', 'freezer bag', 4, 210]]],
+  ['Freezer', 'Fruit', 'Blackberries', 'cup', 'Bottom drawer', null, [[6, 'foraged', 'frozen', 'freezer bag', 3, 160]]],
+  ['Freezer', 'Meat & Fish', 'Chicken stock cubes', 'each', 'Top shelf', 6, [[16, P, 'frozen', 'ice cube tray', 2, 75]]],
+  ['Freezer', 'Baking', 'Pie dough', 'each', 'Top shelf', null, [[2, P, 'frozen', 'wrapped disc', 2, 10]]],
 ];
 
 const RECIPES = [
@@ -258,14 +272,17 @@ export function seedDemo(ctx, { reset = false } = {}) {
     const locIds = {};
     for (const s of R.stores.list()) storeIds[s.name] = s.id;
     for (const [store, locs] of Object.entries(STORES)) {
+      if (!storeIds[store]) continue;
+      const have = Object.fromEntries(R.locations.list({ store_id: storeIds[store] }).map(l => [l.name.toLowerCase(), l.id]));
       locs.forEach((name, i) => {
-        locIds[`${store}/${name}`] = R.locations.create({ store_id: storeIds[store], name, sort_order: i }).id;
+        locIds[`${store}/${name}`] = have[name.toLowerCase()] ?? R.locations.create({ store_id: storeIds[store], name, sort_order: i }).id;
       });
     }
     const catIds = Object.fromEntries(R.categories.list({ kind: 'item' }).map(c => [c.name, c.id]));
 
     let code = 0;
     for (const [store, cat, name, unit, loc, low, batches] of ITEMS) {
+      if (!storeIds[store]) continue;
       const item = R.items.create({
         store_id: storeIds[store], category_id: catIds[cat] ?? null, location_id: locIds[`${store}/${loc}`],
         name, unit, low_threshold: low,

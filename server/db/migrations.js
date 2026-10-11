@@ -65,6 +65,23 @@ export const migrations = [
   CREATE INDEX idx_deductions_log ON cook_deductions(cook_log_id);
   CREATE INDEX idx_deductions_batch ON cook_deductions(batch_id);
   `,
+  // 3: a Refrigerator and a Freezer, each with a few starter shelves. A store the user
+  // already made with the same name is left alone, and nothing that exists is moved.
+  db => {
+    const BUILT_IN = [
+      { name: 'Refrigerator', icon: 'fridge', color: '#5E8C8A', shelves: ['Top shelf', 'Crisper drawer', 'Door'] },
+      { name: 'Freezer', icon: 'freezer', color: '#5B7FA6', shelves: ['Top shelf', 'Bottom drawer'] },
+    ];
+    const exists = db.prepare('SELECT 1 FROM stores WHERE deleted_at IS NULL AND lower(trim(name)) = lower(?)');
+    const next = db.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 n FROM stores');
+    const addStore = db.prepare('INSERT INTO stores (name, icon, color, sort_order) VALUES (?, ?, ?, ?)');
+    const addShelf = db.prepare('INSERT INTO locations (store_id, name, sort_order) VALUES (?, ?, ?)');
+    for (const s of BUILT_IN) {
+      if (exists.get(s.name)) continue;
+      const id = Number(addStore.run(s.name, s.icon, s.color, next.get().n).lastInsertRowid);
+      s.shelves.forEach((shelf, i) => addShelf.run(id, shelf, i));
+    }
+  },
 ];
 
 export function migrate(db) {
@@ -72,7 +89,8 @@ export function migrate(db) {
   for (let i = current; i < migrations.length; i++) {
     db.exec('BEGIN IMMEDIATE');
     try {
-      db.exec(migrations[i]);
+      const step = migrations[i];
+      if (typeof step === 'function') step(db); else db.exec(step);
       db.exec(`PRAGMA user_version = ${i + 1}`);
       db.exec('COMMIT');
     } catch (err) {

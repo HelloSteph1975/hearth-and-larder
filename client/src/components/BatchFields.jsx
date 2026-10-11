@@ -4,6 +4,10 @@ import { UNITS, SOURCES, METHODS, SOURCE_LABELS } from '../lib/options.js';
 export const BOUGHT_KEYS = ['price', 'vendor', 'purchased_on'];
 export const BATCH_KEYS = ['quantity', 'date_stored', 'use_by', 'source', 'method', 'container', 'container_count', 'batch_code'];
 
+// Batches added to a freezer start out as "frozen". It is only a starting value.
+export const FREEZER_METHOD = 'frozen';
+export const isFreezerStore = store => Boolean(store) && (store.icon === 'freezer' || store.name?.trim().toLowerCase() === 'freezer');
+
 // Bought-only details are dropped when the batch didn't come from a shop.
 export function batchPayload(form) {
   const bought = form.source === 'bought';

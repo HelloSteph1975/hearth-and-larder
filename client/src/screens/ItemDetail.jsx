@@ -225,7 +225,7 @@ export function ItemDetail() {
       <PrintGate printer={printer} what="Item record">{() => <ItemPrint item={item} storeName={store?.name} />}</PrintGate>
 
       <ItemForm open={editing} item={item} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); reload(); window.dispatchEvent(new Event('hl:items-changed')); }} />
-      <BatchForm open={Boolean(batchDialog)} item={item} batch={batchDialog?.batch} onClose={() => setBatchDialog(null)}
+      <BatchForm open={Boolean(batchDialog)} item={item} store={store} batch={batchDialog?.batch} onClose={() => setBatchDialog(null)}
         onSaved={() => { setBatchDialog(null); reload(); }} />
     </>
   );

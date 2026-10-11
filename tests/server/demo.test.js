@@ -26,6 +26,22 @@ it('seeds a believable pantry once, and refuses to reset real data', async () =>
   expect(() => seedDemo(t.ctx, { reset: true })).toThrow(/demo/);
 });
 
+it('fills all five stores, using the starter shelves of the Refrigerator and Freezer', () => {
+  t = makeTestContext();
+  t.ctx.config.demo = true;
+  seedDemo(t.ctx);
+  const db = t.ctx.db;
+  const stores = db.prepare(`SELECT s.name, COUNT(i.id) n FROM stores s LEFT JOIN items i ON i.store_id = s.id AND i.deleted_at IS NULL
+    WHERE s.deleted_at IS NULL GROUP BY s.id ORDER BY s.sort_order`).all();
+  expect(stores.map(s => s.name)).toEqual(['Larder', 'Root Cellar', 'Pantry', 'Refrigerator', 'Freezer']);
+  for (const s of stores) expect(s.n, s.name).toBeGreaterThanOrEqual(3);
+  const dupes = db.prepare('SELECT store_id, lower(name) n, COUNT(*) c FROM locations GROUP BY 1, 2 HAVING c > 1').all();
+  expect(dupes).toEqual([]);
+  const frozen = db.prepare(`SELECT DISTINCT b.method FROM batches b JOIN items i ON i.id = b.item_id JOIN stores s ON s.id = i.store_id
+    WHERE s.name = 'Freezer'`).all().map(r => r.method);
+  expect(frozen).toEqual(['frozen']);
+});
+
 it('plans meals inside the current week, today included', () => {
   t = makeTestContext();
   t.ctx.config.demo = true;

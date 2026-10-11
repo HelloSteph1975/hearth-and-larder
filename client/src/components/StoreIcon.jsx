@@ -1,8 +1,8 @@
 import { Apple, Snowflake, Egg, Leaf, Package, Fish, Milk } from 'lucide-react';
-import { JarArt, PotatoArt, WheatArt } from './Illustrations.jsx';
+import { JarArt, PotatoArt, WheatArt, FridgeArt, FreezerArt } from './Illustrations.jsx';
 
 const ICONS = {
-  jar: JarArt, potato: PotatoArt, wheat: WheatArt,
+  jar: JarArt, potato: PotatoArt, wheat: WheatArt, fridge: FridgeArt, freezer: FreezerArt,
   apple: Apple, snowflake: Snowflake, egg: Egg, leaf: Leaf, box: Package, fish: Fish, milk: Milk,
 };
 

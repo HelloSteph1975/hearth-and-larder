@@ -1,6 +1,6 @@
 # Hearth & Larder
 
-Hearth & Larder is a small kitchen keeper that runs on your own computer. It tracks what is in your larder, root cellar and pantry, holds your recipes, and helps you plan the week's meals and shopping.
+Hearth & Larder is a small kitchen keeper that runs on your own computer. It tracks what is in your larder, root cellar, pantry, refrigerator and freezer, holds your recipes, and helps you plan the week's meals and shopping.
 
 It's free. If it earns a place in your kitchen, you can buy me a coffee:
 
@@ -54,7 +54,7 @@ Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don'
 
 ## What it does
 
-- Keeps three stores (Larder, Root Cellar and Pantry), each with items, batches, use-by dates, photos and notes. You can move an item to another store.
+- Keeps five stores (Larder, Root Cellar, Pantry, Refrigerator and Freezer), each with items, batches, use-by dates, photos and notes. You can move an item to another store, and add, rename or remove stores in Settings. New batches in the Freezer start out marked as frozen.
 - Warns you when something is close to its use-by date or running low. You pick how many days ahead in Settings.
 - Stores recipes with scaling, ratings, tags and nutrition, and shows which ingredients you already have.
 - Suggests what you can make from what is on the shelves.
@@ -70,6 +70,7 @@ Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don'
 | ![A store with its items](docs/screenshots/larder.png) | ![One item with its batches](docs/screenshots/item.png) |
 | ![A recipe with ingredient status](docs/screenshots/recipe.png) | ![The weekly meal planner](docs/screenshots/planner.png) |
 | ![The shopping list](docs/screenshots/shopping.png) | ![Settings and backups](docs/screenshots/settings.png) |
+| ![The Freezer with its frozen batches](docs/screenshots/freezer.png) | |
 
 ## What you need
 

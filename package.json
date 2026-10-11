@@ -1,7 +1,7 @@
 {
   "name": "hearth-and-larder",
   "version": "1.0.0",
-  "description": "A cottagecore kitchen keeper: larder, root cellar, pantry, recipe box and meal planner.",
+  "description": "A cottagecore kitchen keeper: larder, root cellar, pantry, refrigerator, freezer, recipe box and meal planner.",
   "type": "module",
   "license": "MIT",
   "engines": {

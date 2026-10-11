@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog } from '../components/Dialog.jsx';
 import { Button } from '../components/Button.jsx';
-import { BatchFields, FormAlert, batchPayload, shownBatchKeys } from '../components/BatchFields.jsx';
+import { BatchFields, FormAlert, batchPayload, shownBatchKeys, isFreezerStore, FREEZER_METHOD } from '../components/BatchFields.jsx';
+import { useStores } from '../components/StoresProvider.jsx';
 import { useApi } from '../lib/useApi.js';
 import { api } from '../lib/api.js';
 import { todayISO } from '../lib/dates.js';
@@ -17,11 +18,14 @@ function initial(item, batch) {
   };
 }
 
-export function BatchForm({ open, onClose, onSaved, item, batch }) {
+export function BatchForm({ open, onClose, onSaved, item, batch, store }) {
   const editing = Boolean(batch);
+  const { stores } = useStores();
+  const freezer = isFreezerStore(store ?? stores.find(s => s.id === item.store_id));
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const methodChosen = useRef(false);
   const toast = useToast();
   const { data: recipes } = useApi(open ? '/api/recipes' : null);
 
@@ -29,9 +33,18 @@ export function BatchForm({ open, onClose, onSaved, item, batch }) {
     if (!open) return;
     setForm(initial(item, batch));
     setErrors({});
+    methodChosen.current = false;
   }, [open, item, batch]);
 
-  const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  // A new batch in the freezer starts as "frozen" until the user picks a method themselves.
+  useEffect(() => {
+    if (open && !editing && freezer && !methodChosen.current) setForm(f => (f.method ? f : { ...f, method: FREEZER_METHOD }));
+  }, [open, editing, freezer, item, batch]);
+
+  const setField = (k, v) => {
+    if (k === 'method') methodChosen.current = true;
+    setForm(f => ({ ...f, [k]: v }));
+  };
 
   async function save(e) {
     e.preventDefault();

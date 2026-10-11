@@ -17,7 +17,7 @@ import { usePrint } from '../lib/usePrint.js';
 import { ItemForm } from './ItemForm.jsx';
 import { NotFound } from './NotFound.jsx';
 
-const ART = { jar: 'jar', potato: 'potato', wheat: 'wheat' };
+const ART = { jar: 'jar', potato: 'potato', wheat: 'wheat', fridge: 'fridge', freezer: 'freezer' };
 const NO_FILTERS = { q: '', category_id: '', location_id: '', source: '', low: false, sort: 'name' };
 
 function SkeletonCards() {

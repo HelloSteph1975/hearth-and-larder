@@ -1,6 +1,6 @@
-import { JarArt, PotatoArt, WheatArt, RecipeBoxArt, BasketArt } from './Illustrations.jsx';
+import { JarArt, PotatoArt, WheatArt, FridgeArt, FreezerArt, RecipeBoxArt, BasketArt } from './Illustrations.jsx';
 
-const ART = { jar: JarArt, potato: PotatoArt, wheat: WheatArt, recipeBox: RecipeBoxArt, basket: BasketArt };
+const ART = { jar: JarArt, potato: PotatoArt, wheat: WheatArt, fridge: FridgeArt, freezer: FreezerArt, recipeBox: RecipeBoxArt, basket: BasketArt };
 
 export function EmptyState({ art = 'jar', title, body, action }) {
   const Art = ART[art] ?? JarArt;

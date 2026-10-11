@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog } from '../components/Dialog.jsx';
 import { Button } from '../components/Button.jsx';
 import { Field, TextInput, NumberInput, DateInput, Select, TextArea, Checkbox } from '../components/Field.jsx';
@@ -6,7 +6,7 @@ import { useApi } from '../lib/useApi.js';
 import { api } from '../lib/api.js';
 import { todayISO } from '../lib/dates.js';
 import { UNITS } from '../lib/options.js';
-import { BatchFields, FormAlert, batchPayload, shownBatchKeys } from '../components/BatchFields.jsx';
+import { BatchFields, FormAlert, batchPayload, shownBatchKeys, isFreezerStore, FREEZER_METHOD } from '../components/BatchFields.jsx';
 import { uploadPhoto } from '../components/PhotoGallery.jsx';
 import { useToast } from '../components/ToastProvider.jsx';
 import { useStores } from '../components/StoresProvider.jsx';
@@ -22,9 +22,11 @@ export function ItemForm({ open, onClose, onSaved, item, storeId }) {
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const methodChosen = useRef(false);
   const toast = useToast();
   const { stores } = useStores();
   const sid = form.store_id ?? storeId;
+  const freezer = isFreezerStore(stores.find(s => s.id === Number(sid)));
   const { data: categories } = useApi(open ? '/api/categories?kind=item' : null);
   const { data: locations } = useApi(open && sid ? `/api/locations?store_id=${sid}` : null);
 
@@ -34,16 +36,27 @@ export function ItemForm({ open, onClose, onSaved, item, storeId }) {
     setBatch(blankBatch());
     setFiles([]);
     setErrors({});
+    methodChosen.current = false;
   }, [open, item, storeId]);
 
+  // A first batch in the freezer starts as "frozen" until the user picks a method themselves.
+  useEffect(() => {
+    if (open && !editing && freezer && !methodChosen.current) setBatch(b => (b.method ? b : { ...b, method: FREEZER_METHOD }));
+  }, [open, editing, freezer, item, storeId]);
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
-  const setB = (k, v) => setBatch(b => ({ ...b, [k]: v }));
+  const setB = (k, v) => {
+    if (k === 'method') methodChosen.current = true;
+    setBatch(b => ({ ...b, [k]: v }));
+  };
   // Moving to another store: its shelves are different, so the old one no longer applies.
   const setStore = e => setForm(f => ({ ...f, store_id: Number(e.target.value), location_id: '' }));
 
   async function save(e) {
     e.preventDefault();
-    const filled = Object.entries(batch).some(([k, v]) => k !== 'date_stored' && v !== '');
+    // The date and a prefilled method are defaults, not something the user filled in.
+    const prefilled = k => k === 'date_stored' || (k === 'method' && !methodChosen.current);
+    const filled = Object.entries(batch).some(([k, v]) => !prefilled(k) && v !== '');
     if (!editing && batch.quantity === '' && filled) {
       setErrors({ quantity: 'Add a quantity for the first batch' });
       return;

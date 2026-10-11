@@ -7,6 +7,7 @@ const C = {
   cream: '#FFFDF6', linen: '#FBF1D9', tomato: '#C44A3A', tomatoDark: '#A63B2D', tomatoSoft: '#F7DCD5',
   garden: '#6B8F4E', gardenSoft: '#E3EDD6', honey: '#F0D78C', honeyLight: '#F6E3A1',
   wood: '#D9A066', woodDark: '#B97E48', potato: '#DDB273',
+  frost: '#DCEAEA', frostDeep: '#B9D3D6', icy: '#5B7FA6',
 };
 
 function Svg({ size, label, children }) {
@@ -80,6 +81,49 @@ export function WheatArt({ size = 64, label }) {
       <path d="M32 45c-4-4.4-10-4.4-10 0s6 4.4 10 0zM32 45c4-4.4 10-4.4 10 0s-6 4.4-10 0z" fill={C.tomato} stroke={C.tomatoDark} strokeWidth="1.6" />
       <path d="M30.6 46.4l-3.6 7M33.4 46.4l3.6 7" stroke={C.tomato} strokeWidth="2.4" />
       <circle cx="32" cy="45" r="2.2" fill={C.tomatoDark} stroke="none" />
+    </Svg>
+  );
+}
+
+const HEART = 'M32 47.5c-3.6-2.3-5.4-4.2-5.4-6.3a2.7 2.7 0 0 1 5.4-.8 2.7 2.7 0 0 1 5.4.8c0 2.1-1.8 4-5.4 6.3z';
+
+export function FridgeArt({ size = 64, label }) {
+  return (
+    <Svg size={size} label={label}>
+      <path d="M22 58v2.6M42 58v2.6" strokeWidth="2.6" />
+      <rect x="15" y="4" width="34" height="55" rx="9" fill={C.frostDeep} />
+      <path d="M15 23h34" />
+      <path d="M20 8.6c3-1.6 7-2.2 11-2" stroke={C.cream} strokeWidth="2.4" />
+      <path d="M21 13v6M21 28v12" strokeWidth="3" />
+      <circle cx="39" cy="14" r="3.6" fill={C.honey} strokeWidth="1.8" />
+      <circle cx="37.8" cy="12.8" r=".9" fill={C.cream} stroke="none" />
+      <path d={HEART} transform="translate(7 -4)" fill={C.tomato} stroke={C.tomatoDark} strokeWidth="1.2" />
+      <path d="M20 52h24" strokeWidth="1.6" opacity=".45" />
+    </Svg>
+  );
+}
+
+const flake = (cx, cy, r) => (
+  <g transform={`translate(${cx} ${cy})`}>
+    {[0, 60, 120].map(a => (
+      <g key={a} transform={`rotate(${a})`}>
+        <path d={`M0 ${-r}V${r}M-2.4 ${-r + 2.4}L0 ${-r + 4.6}l2.4-2.2M-2.4 ${r - 2.4}L0 ${r - 4.6}l2.4 2.2`} />
+      </g>
+    ))}
+  </g>
+);
+
+export function FreezerArt({ size = 64, label }) {
+  return (
+    <Svg size={size} label={label}>
+      <path d="M14 55v3M50 55v3" strokeWidth="2.6" />
+      <rect x="8" y="27" width="48" height="29" rx="5" fill={C.frost} />
+            <rect x="5" y="19" width="54" height="9" rx="3.5" fill={C.frostDeep} />
+      <rect x="25" y="25" width="14" height="4" rx="2" fill={C.cream} />
+      <path d="M11 28v3.4a1.5 1.5 0 0 0 3 0V28M17 28v2a1.2 1.2 0 0 0 2.4 0v-2M45 28v4a1.5 1.5 0 0 0 3 0v-4" fill={C.frostDeep} strokeWidth="1.6" />
+      <g stroke={C.icy} strokeWidth="2">{flake(32, 42.5, 8)}</g>
+      <path d="M13 9.5v6M10 12.5h6M51 7v5M48.5 9.5h5" stroke={C.icy} strokeWidth="1.8" />
+      <circle cx="44" cy="14" r="1.2" fill={C.icy} stroke="none" />
     </Svg>
   );
 }

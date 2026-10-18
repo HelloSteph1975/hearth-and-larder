@@ -97,3 +97,39 @@ test('a day in the kitchen', async ({ page }) => {
   await page.getByRole('link', { name: 'Hearth & Larder, home' }).click();
   await expect(page.locator('section', { has: page.getByRole('heading', { name: 'Use soon' }) })).toContainText('Apple butter');
 });
+
+// Runs after the day in the kitchen, in the same data folder, so the Hearth is past its first run.
+test('a batch week goes on the planner and its jar shows on the Hearth', async ({ page }) => {
+  // 1. Batch Days lists the twelve weeks in order.
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Batch Days' }).click();
+  await expect(page.getByRole('heading', { name: 'Batch Days' })).toBeVisible();
+  await expect(page.locator('.batch-week h3')).toHaveText(Array.from({ length: 12 }, (_, i) => `Week ${i + 1}`));
+
+  // 2. Put Week 1 on the planner on the default days.
+  await page.getByRole('button', { name: 'Put Week 1 on the planner' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('list', { name: 'What goes where' }).getByRole('listitem')).toHaveCount(3);
+  await dialog.getByRole('button', { name: 'Put on the planner' }).click();
+
+  // 3. The planner opens on that week with three tasks in the Batch row.
+  await expect(page).toHaveURL(/\/planner\?week=/);
+  const tasks = page.locator('.plan-entry.is-batch');
+  await expect(tasks).toHaveCount(3);
+  await expect(tasks.nth(0)).toContainText('Big make');
+  const jar = tasks.nth(1);
+  await expect(jar).toContainText('Start a jar');
+  await expect(jar.locator('.ready-note')).toContainText('Ready');
+
+  // 4. Tick the jar done; it shows on the Hearth under Jars working.
+  await jar.getByRole('checkbox', { name: /^Done/ }).check();
+  await expect(jar).toHaveClass(/is-done/);
+  await page.getByRole('link', { name: 'Hearth & Larder, home' }).click();
+  const jars = page.locator('section', { has: page.getByRole('heading', { name: 'Jars working' }) });
+  await expect(jars).toContainText('sourdough starter');
+  await expect(jars).toContainText('Started');
+
+  // 5. Back on Batch Days, Week 1 says it is planned.
+  await page.getByRole('link', { name: 'Batch Days' }).click();
+  await expect(page.locator('.batch-week').first()).toContainText('Planned from');
+});

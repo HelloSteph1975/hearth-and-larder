@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { House, BookOpen, ChefHat, CalendarDays, ShoppingBasket, Settings } from 'lucide-react';
+import { House, BookOpen, ChefHat, CalendarDays, CookingPot, ShoppingBasket, Settings } from 'lucide-react';
 import { JarArt } from './Illustrations.jsx';
 import { StoreIcon } from './StoreIcon.jsx';
 import { useStores } from './StoresProvider.jsx';
@@ -54,6 +54,7 @@ export function Sidebar({ id, open = false }) {
             <NavItem to="/recipes" icon={<BookOpen size={20} />}>Recipe Box</NavItem>
             <NavItem to="/can-make" icon={<ChefHat size={20} />}>What can I make?</NavItem>
             <NavItem to="/planner" icon={<CalendarDays size={20} />}>Meal Planner</NavItem>
+            <NavItem to="/batch-days" icon={<CookingPot size={20} />}>Batch Days</NavItem>
             <NavItem to="/shopping" icon={<ShoppingBasket size={20} />}>Shopping List</NavItem>
           </ul>
           <ul className="nav-list nav-foot">

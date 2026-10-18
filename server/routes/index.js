@@ -4,6 +4,7 @@ import { itemsRouter, batchesRouter } from './items.js';
 import { photosRouter } from './photos.js';
 import { recipesRouter, cookLogRouter, canMakeRoute } from './recipes.js';
 import { planRouter } from './plan.js';
+import { batchPlansRouter } from './batch.js';
 import { shoppingRouter } from './shopping.js';
 import { storesRouter, categoriesRouter, locationsRouter } from './stores.js';
 import { settingsRouter, homeRoute } from './settings.js';
@@ -22,6 +23,7 @@ export function apiRouter(ctx, { onShutdown }) {
   r.use('/recipes', recipesRouter(ctx));
   r.use('/cook-log', cookLogRouter(ctx));
   r.use('/plan', planRouter(ctx));
+  r.use('/batch-plans', batchPlansRouter(ctx));
   r.use('/shopping', shoppingRouter(ctx));
   r.use('/settings', settingsRouter(ctx));
   r.get('/home', homeRoute(ctx));

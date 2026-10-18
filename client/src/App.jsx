@@ -12,6 +12,7 @@ import { RecipeDetail } from './screens/RecipeDetail.jsx';
 import { RecipeEditor } from './screens/RecipeEditor.jsx';
 import { CanMake } from './screens/CanMake.jsx';
 import { Planner } from './screens/Planner.jsx';
+import { BatchDays } from './screens/BatchDays.jsx';
 import { Shopping } from './screens/Shopping.jsx';
 import { Settings } from './screens/Settings.jsx';
 import { NotFound } from './screens/NotFound.jsx';
@@ -34,6 +35,7 @@ export const routes = [
       { path: 'recipes/:id/edit', element: <RecipeEditor /> },
       { path: 'can-make', element: <CanMake /> },
       { path: 'planner', element: <Planner /> },
+      { path: 'batch-days', element: <BatchDays /> },
       { path: 'shopping', element: <Shopping /> },
       { path: 'settings', element: <Settings /> },
       { path: '*', element: <NotFound /> },

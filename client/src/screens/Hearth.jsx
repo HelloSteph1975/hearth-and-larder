@@ -14,6 +14,7 @@ import { useApi } from '../lib/useApi.js';
 import { api } from '../lib/api.js';
 import { todayISO, prettyDate, relativeDays } from '../lib/dates.js';
 import { formatQty } from '../lib/format.js';
+import { KIND_LABEL, readyRange, readyState } from '../lib/batch.js';
 
 export function greeting(hour, name) {
   const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
@@ -111,9 +112,41 @@ function TodayCard({ rows }) {
               <div className="home-main">
                 <span className="slot-name">{SLOT_LABEL[e.slot]}</span>
                 {e.recipe_id ? <Link to={`/recipes/${e.recipe_id}`}>{e.recipe_title}</Link> : <span>{e.note}</span>}
+                {e.done_on && <span className="muted">Done</span>}
               </div>
             </li>
           ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+const JAR_BADGE = {
+  waiting: ['honey', 'working'],
+  ready: ['garden', 'check it now'],
+  past: ['tomato', 'past its window'],
+};
+
+export function JarsCard({ rows, today }) {
+  return (
+    <Card as="section" className="home-card" aria-labelledby="h-jars">
+      <h2 id="h-jars">Jars working</h2>
+      {rows.length === 0 ? <p className="hand">No ferments on the go. <Link to="/batch-days">Pick a batch week</Link></p> : (
+        <ul className="home-list">
+          {rows.map(j => {
+            const [tone, text] = JAR_BADGE[readyState(j, today)];
+            return (
+              <li key={j.id}>
+                <div className="home-main">
+                  <span className="slot-name">Week {j.batch_week} · {KIND_LABEL[j.batch_kind]}</span>
+                  <span className="jar-task">{j.note}</span>
+                  <span className="muted">{j.done_on ? `Started ${prettyDate(j.done_on)}` : `Planned for ${prettyDate(j.date)}`}. {readyRange(j, today)}</span>
+                </div>
+                <Badge tone={tone}>{text}</Badge>
+              </li>
+            );
+          })}
         </ul>
       )}
     </Card>
@@ -161,7 +194,8 @@ export function Hearth() {
   if (error) return <div className="card error-card"><p className="error-note">{error.message}</p><Button variant="secondary" onClick={reload}>Try again</Button></div>;
   if (!data) return <div className="grid-cards" aria-busy="true" aria-label="Loading">{[0, 1, 2].map(i => <span key={i} className="skeleton skeleton-card" />)}</div>;
 
-  const { settings, use_soon, running_low, today, can_make, recently_cooked, counts } = data;
+  const { settings, use_soon, running_low, today, can_make, recently_cooked, counts, jars_working: jars = [] } = data;
+  const meals = today.filter(e => e.slot !== 'batch').length;
   const firstRun = counts.items === 0 && counts.recipes === 0;
   const n = use_soon.length;
   const note = firstRun ? 'the kettle is on and the shelves are empty'
@@ -176,12 +210,13 @@ export function Hearth() {
             <Stat value={counts.items} label={plural(counts.items, 'thing on the shelves', 'things on the shelves')} />
             <Stat value={counts.batches} label={plural(counts.batches, 'batch put by', 'batches put by')} />
             <Stat value={counts.recipes} label={plural(counts.recipes, 'recipe in the box', 'recipes in the box')} />
-            <Stat value={today.length} label={plural(today.length, 'meal planned today', 'meals planned today')} />
+            <Stat value={meals} label={plural(meals, 'meal planned today', 'meals planned today')} />
           </div>
           <div className="home-grid">
             <UseSoonCard rows={use_soon} />
             <LowCard rows={running_low} />
             <TodayCard rows={today} />
+            <JarsCard rows={jars} today={todayISO()} />
             <CanMakeCard recipes={can_make} />
             <CookedCard rows={recently_cooked} />
           </div>

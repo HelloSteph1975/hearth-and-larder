@@ -18,7 +18,7 @@ export function repos(db) {
         'is_family_recipe', 'favorite', 'rating', 'notes', 'calories', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sugar_g', 'sodium_mg'],
         { orderBy: 'title COLLATE NOCASE' }),
       cookLog: createRepo(db, 'cook_log', ['recipe_id', 'cooked_on', 'servings', 'notes'], { orderBy: 'cooked_on DESC, id DESC' }),
-      plan: createRepo(db, 'meal_plan', ['date', 'slot', 'recipe_id', 'note', 'servings', 'sort_order'], { orderBy: 'date, sort_order, id' }),
+      plan: createRepo(db, 'meal_plan', ['date', 'slot', 'recipe_id', 'note', 'servings', 'sort_order', 'batch_run_id', 'batch_day_id', 'done_on'], { orderBy: 'date, sort_order, id' }),
       shopping: createRepo(db, 'shopping_items', ['name', 'quantity', 'unit', 'category_id', 'est_price', 'checked', 'origin', 'plan_range'],
         { orderBy: 'checked, name COLLATE NOCASE' }),
     };

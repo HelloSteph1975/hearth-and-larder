@@ -64,7 +64,7 @@ it('upgrading keeps a store the user already named Freezer and adds only the Ref
     const storesBefore = db.prepare('SELECT * FROM stores ORDER BY id').all();
 
     migrate(db);
-    expect(db.prepare('PRAGMA user_version').get().user_version).toBe(3);
+    expect(db.prepare('PRAGMA user_version').get().user_version).toBe(migrations.length);
     const names = db.prepare('SELECT name FROM stores WHERE deleted_at IS NULL ORDER BY sort_order').all().map(r => r.name);
     expect(names).toEqual(['Larder', 'Root Cellar', 'freezer', 'Pantry', 'Refrigerator']);
     const fridge = db.prepare("SELECT * FROM stores WHERE name = 'Refrigerator'").get();

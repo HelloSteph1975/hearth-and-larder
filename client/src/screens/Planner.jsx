@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DndContext, pointerWithin, rectIntersection, PointerSensor, KeyboardSensor, useSensor, useSensors, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Plus, X, GripVertical, ShoppingBasket, Pencil } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Plus, X, GripVertical, ShoppingBasket, Pencil, CookingPot } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../lib/useApi.js';
 import { api } from '../lib/api.js';
 import { todayISO, weekStart, weekDays, addDays, prettyDate } from '../lib/dates.js';
@@ -13,6 +13,7 @@ import { useToast } from '../components/ToastProvider.jsx';
 import { PrintButton, PrintGate } from '../components/Print.jsx';
 import { PlanPrint } from '../components/PrintViews.jsx';
 import { usePrint } from '../lib/usePrint.js';
+import { KIND_LABEL, readyRange } from '../lib/batch.js';
 
 export { SLOTS };
 
@@ -67,16 +68,32 @@ function DrawerRecipe({ recipe }) {
   );
 }
 
-function Entry({ entry, onRemove, onEdit }) {
+function Entry({ entry, onRemove, onEdit, onDone }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `entry-${entry.id}`, data: { entry } });
   const label = entry.recipe_title ?? entry.note;
+  const batch = entry.slot === 'batch';
+  const ready = readyRange(entry, todayISO());
+  // Shown at once; put back if the save fails.
+  const [done, setDone] = useState(Boolean(entry.done_on));
+  useEffect(() => setDone(Boolean(entry.done_on)), [entry.done_on]);
+  async function tick(checked) {
+    setDone(checked);
+    if (!(await onDone(entry, checked))) setDone(!checked);
+  }
   return (
-    <div ref={setNodeRef} className={`plan-entry ${entry.recipe_id ? '' : 'is-note'} ${isDragging ? 'is-dragging' : ''}`}>
+    <div ref={setNodeRef} className={`plan-entry ${entry.recipe_id ? '' : 'is-note'} ${batch ? 'is-batch' : ''} ${done ? 'is-done' : ''} ${isDragging ? 'is-dragging' : ''}`}>
+      {entry.batch_kind && <small className="batch-kind">Week {entry.batch_week} · {KIND_LABEL[entry.batch_kind]}</small>}
       <span className="plan-entry-text">
         {entry.recipe_id ? <Link to={`/recipes/${entry.recipe_id}`}>{entry.recipe_title}</Link>
-          : <button type="button" className="link-btn hand" onClick={() => onEdit(entry)}>{entry.note}</button>}
+          : <button type="button" className={`link-btn ${batch ? 'batch-task' : 'hand'}`} title={batch ? entry.note : undefined} onClick={() => onEdit(entry)}>{entry.note}</button>}
         {entry.servings ? <small className="muted"> x{entry.servings}</small> : null}
       </span>
+      {ready && <small className="ready-note">{ready}</small>}
+      {batch && (
+        <label className="done-tick">
+          <input type="checkbox" checked={done} onChange={e => tick(e.target.checked)} aria-label={`Done: ${label}`} /> Done
+        </label>
+      )}
       <span className="entry-tools">
         <span className="drag-handle" {...listeners} {...attributes} aria-label={`Move ${label}`}><GripVertical size={14} /></span>
         <button className="icon-btn" aria-label={`Edit ${label}`} onClick={() => onEdit(entry)}><Pencil size={14} /></button>
@@ -86,11 +103,11 @@ function Entry({ entry, onRemove, onEdit }) {
   );
 }
 
-function Slot({ date, slot, entries, onAdd, onRemove, onEdit }) {
+function Slot({ date, slot, entries, onAdd, onRemove, onEdit, onDone }) {
   const { setNodeRef, isOver } = useDroppable({ id: `${date}|${slot}` });
   return (
     <div ref={setNodeRef} role="cell" className={`plan-slot ${isOver ? 'is-over' : ''} ${date === todayISO() ? 'is-today' : ''}`}>
-      {entries.map(e => <Entry key={e.id} entry={e} onRemove={onRemove} onEdit={onEdit} />)}
+      {entries.map(e => <Entry key={e.id} entry={e} onRemove={onRemove} onEdit={onEdit} onDone={onDone} />)}
       <button className="slot-add" aria-label={`Add ${slot} on ${prettyDate(date)}`} onClick={() => onAdd(date, slot)}><Plus size={14} aria-hidden="true" /></button>
     </div>
   );
@@ -102,7 +119,9 @@ const hits = args => { const within = pointerWithin(args); return within.length 
 export function Planner() {
   const settingsState = useApi('/api/settings');
   const settings = settingsState.data;
-  const [start, setStart] = useState(null);
+  const [params] = useSearchParams();
+  const asked = params.get('week');
+  const [start, setStart] = useState(/^\d{4}-\d{2}-\d{2}$/.test(asked ?? '') ? asked : null);
   const weekStartDay = settings?.week_start ?? 'monday';
   const from = start ?? weekStart(todayISO(), weekStartDay);
   const days = weekDays(from);
@@ -133,6 +152,13 @@ export function Planner() {
       if (await applyDrop(e)) reload();
     } catch (err) { toast.show({ message: err.message, duration: 6000 }); }
   }
+  async function markDone(entry, done) {
+    try {
+      await api.patch(`/api/plan/${entry.id}`, { done_on: done ? todayISO() : null });
+      reload();
+      return true;
+    } catch (err) { toast.show({ message: err.message, duration: 6000 }); return false; }
+  }
   const tryAgain = () => { reloadSettings(); reload(); reloadRecipes(); };
 
   const remove = e => del({ url: `/api/plan/${e.id}`, label: e.recipe_title ?? e.note, onChange: reload, body: 'It comes off the plan. You can undo this for a few seconds.' });
@@ -146,6 +172,7 @@ export function Planner() {
           <Button variant="ghost" icon={ChevronLeft} onClick={() => setStart(addDays(from, -7))} aria-label="Previous week" />
           <Button variant="ghost" onClick={() => setStart(null)}>This week</Button>
           <Button variant="ghost" icon={ChevronRight} onClick={() => setStart(addDays(from, 7))} aria-label="Next week" />
+          <Button as={Link} to="/batch-days" variant="ghost" icon={CookingPot}>Batch days</Button>
           <PrintButton onClick={printer.print} busy={printer.preparing} disabled={!entries} />
           <Button as={Link} to={`/shopping?from=${from}&to=${days[6]}`} icon={ShoppingBasket}>Shopping list for this week</Button>
         </>} />
@@ -178,7 +205,7 @@ export function Planner() {
             {SLOTS.map(slot => (
               <div className="week-row" role="row" key={slot}>
                 <span className="slot-label hand" role="rowheader">{SLOT_LABEL[slot]}</span>
-                {days.map(d => <Slot key={d} date={d} slot={slot} entries={grid[`${d}|${slot}`] ?? []} onAdd={(date, s) => setAdding({ date, slot: s })} onRemove={remove} onEdit={setEditingEntry} />)}
+                {days.map(d => <Slot key={d} date={d} slot={slot} entries={grid[`${d}|${slot}`] ?? []} onAdd={(date, s) => setAdding({ date, slot: s })} onRemove={remove} onEdit={setEditingEntry} onDone={markDone} />)}
               </div>
             ))}
           </div>

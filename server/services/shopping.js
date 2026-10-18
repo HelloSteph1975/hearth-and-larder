@@ -2,6 +2,7 @@ import { transaction } from '../db/connection.js';
 import { repos } from '../db/repos.js';
 import { getRecipe } from '../db/recipes.js';
 import { planEntries } from '../db/plan.js';
+import { batchNeeds } from './batch.js';
 import { stockIndex, scaleQty } from './stock.js';
 import { normalizeName, toBase, fromBase, round } from './units.js';
 
@@ -59,7 +60,13 @@ export function buildFromPlan(db, from, to) {
   const index = stockIndex(db);
   const needs = new Map(); // key -> { name, unit, family, base, unitless }
   const recipeCache = new Map();
-  for (const entry of planEntries(db, from, to)) {
+  const entries = planEntries(db, from, to);
+  // A batch task's ingredients have no amounts: they go on the list only when none is on the shelves.
+  for (const name of batchNeeds(db, entries)) {
+    const key = `${normalizeName(name)}|unitless`;
+    if (!needs.has(key)) needs.set(key, { name, unit: null, family: 'unitless', base: 0, unitless: true, batch: true });
+  }
+  for (const entry of entries) {
     if (!entry.recipe_id) continue;
     if (!recipeCache.has(entry.recipe_id)) recipeCache.set(entry.recipe_id, getRecipe(db, entry.recipe_id));
     const recipe = recipeCache.get(entry.recipe_id);
@@ -76,6 +83,9 @@ export function buildFromPlan(db, from, to) {
   const categoryFor = categoryLookup(db);
   const ticked = tickedPlanRows(db, `${from}..${to}`);
   const out = [];
+  // A batch need is already covered when a recipe asks for some of the same thing by amount.
+  const measured = new Set([...needs].filter(([, n]) => !n.unitless && n.base > 1e-9).map(([k]) => k.split('|')[0]));
+  for (const [key, n] of needs) if (n.batch && measured.has(key.split('|')[0])) needs.delete(key);
   for (const [key, n] of needs) {
     const name = key.split('|')[0];
     const batches = index.get(name) ?? [];

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { repos } from '../db/repos.js';
 import { transaction } from '../db/connection.js';
 import { saveRecipe } from '../db/recipes.js';
+import { placeBatchWeek } from '../services/batch.js';
 import { fileURLToPath } from 'node:url';
 import { defaultDataDir, readConfigFile } from '../config.js';
 
@@ -311,6 +312,16 @@ export function seedDemo(ctx, { reset = false } = {}) {
       [4, 'lunch', 6],
       [5, 'breakfast', 4],
     ].forEach(([k, slot, ri], i) => R.plan.create({ date: day(k), slot, recipe_id: recipeIds[ri], sort_order: i }));
+
+    // Batch week 1 on Monday, Wednesday and Saturday, with the days gone by ticked done.
+    const week1 = db.prepare('SELECT id FROM batch_plans WHERE week_no = 1').get();
+    if (week1) {
+      const today = ymd(now);
+      for (const id of placeBatchWeek(db, week1.id, [day(0), day(2), day(5)]).entries) {
+        const e = R.plan.get(id);
+        if (e.date <= today) R.plan.update(id, { done_on: e.date });
+      }
+    }
 
     // Cook log
     R.cookLog.create({ recipe_id: recipeIds[0], cooked_on: daysFrom(now, -9), servings: 4, notes: 'Added extra carrots.' });

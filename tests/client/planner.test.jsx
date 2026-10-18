@@ -5,7 +5,8 @@ it('parses drop targets', () => {
   expect(planDropTarget('2026-10-08|supper')).toEqual({ date: '2026-10-08', slot: 'supper' });
   expect(planDropTarget('drawer')).toBeNull();
   expect(planDropTarget('2026-10-08|brunch')).toBeNull();
-  expect(SLOTS).toEqual(['breakfast', 'lunch', 'supper', 'snack']);
+  expect(planDropTarget('2026-10-08|batch')).toEqual({ date: '2026-10-08', slot: 'batch' });
+  expect(SLOTS).toEqual(['breakfast', 'lunch', 'supper', 'snack', 'batch']);
 });
 
 import { vi } from 'vitest';

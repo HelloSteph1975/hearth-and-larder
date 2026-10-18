@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { crudRouter } from './crud.js';
 import { repos } from '../db/repos.js';
-import { planEntries } from '../db/plan.js';
+import { planWithReady, prepareBatchUpdate } from '../services/batch.js';
 import { check } from '../validate.js';
 import { HttpError } from '../http.js';
 import { planSchema } from '../schemas.js';
@@ -15,7 +15,7 @@ export function planRouter(ctx) {
   const r = Router();
   r.get('/', (req, res) => {
     const { from, to } = check({ from: 'date!', to: 'date!' }, req.query);
-    res.json(planEntries(ctx.db, from, to));
+    res.json(planWithReady(ctx.db, from, to));
   });
   r.post('/', (req, res) => {
     const data = check(planSchema, req.body);
@@ -26,6 +26,6 @@ export function planRouter(ctx) {
     }
     res.status(201).json(repos(ctx.db).plan.create(data));
   });
-  r.use(crudRouter(ctx, { repo: db => repos(db).plan, schema: planSchema, validateRow: checkEntry }));
+  r.use(crudRouter(ctx, { repo: db => repos(db).plan, schema: planSchema, validateRow: checkEntry, prepareUpdate: (ctx, data, row) => prepareBatchUpdate(data, row) }));
   return r;
 }

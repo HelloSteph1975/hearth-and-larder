@@ -5,7 +5,7 @@ import { transaction } from '../db/connection.js';
 
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj[k] !== undefined).map(k => [k, obj[k]]));
 
-export function crudRouter(ctx, { repo, schema, filters = [], list, beforeDelete, onDelete, onRestore, prepareCreate = d => d, prepareUpdate = (ctx, d) => d, validateRow }) {
+export function crudRouter(ctx, { repo, schema, filters = [], list, beforeDelete, onDelete, onRestore, prepareCreate = d => d, prepareUpdate = (ctx, d) => d, validateRow, afterUpdate }) {
   const r = Router();
   const R = () => repo(ctx.db);
 
@@ -29,7 +29,11 @@ export function crudRouter(ctx, { repo, schema, filters = [], list, beforeDelete
     if (!row) throw notFound();
     const data = check(schema, req.body, { partial: true });
     validateRow?.(ctx, { ...row, ...data }, row);
-    res.json(R().update(id, prepareUpdate(ctx, data, row)));
+    res.json(transaction(ctx.db, () => {
+      const saved = R().update(id, prepareUpdate(ctx, data, row));
+      afterUpdate?.(ctx, saved, row);
+      return saved;
+    }));
   });
 
   r.delete('/:id', (req, res) => {

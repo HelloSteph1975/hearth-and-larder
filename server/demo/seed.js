@@ -323,6 +323,14 @@ export function seedDemo(ctx, { reset = false } = {}) {
       }
     }
 
+    // The rhythm list: a few staples made lately, and a basil harvest waiting to become pesto.
+    const staple = name => db.prepare('SELECT id FROM rhythms WHERE name = ? AND deleted_at IS NULL').get(name)?.id;
+    for (const [name, ago] of [['Bread', 10], ['Yogurt', 3], ['Ghee', 20], ['Stock', 6], ['Kombucha', 12], ['Sauerkraut', 40]]) {
+      const id = staple(name);
+      if (id) R.rhythmLog.create({ rhythm_id: id, made_on: daysFrom(now, -ago) });
+    }
+    R.harvests.create({ crop: 'Basil', quantity: 3, unit: 'bunch', harvested_on: daysFrom(now, -2), source: 'manual' });
+
     // Cook log
     R.cookLog.create({ recipe_id: recipeIds[0], cooked_on: daysFrom(now, -9), servings: 4, notes: 'Added extra carrots.' });
     R.cookLog.create({ recipe_id: recipeIds[0], cooked_on: daysFrom(now, -2), servings: 4 });

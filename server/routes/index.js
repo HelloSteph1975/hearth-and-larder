@@ -5,6 +5,7 @@ import { photosRouter } from './photos.js';
 import { recipesRouter, cookLogRouter, canMakeRoute } from './recipes.js';
 import { planRouter } from './plan.js';
 import { batchPlansRouter } from './batch.js';
+import { rhythmsRouter, rhythmLogRouter, harvestsRouter } from './rhythm.js';
 import { shoppingRouter } from './shopping.js';
 import { storesRouter, categoriesRouter, locationsRouter } from './stores.js';
 import { settingsRouter, homeRoute } from './settings.js';
@@ -24,6 +25,9 @@ export function apiRouter(ctx, { onShutdown }) {
   r.use('/cook-log', cookLogRouter(ctx));
   r.use('/plan', planRouter(ctx));
   r.use('/batch-plans', batchPlansRouter(ctx));
+  r.use('/rhythms', rhythmsRouter(ctx));
+  r.use('/rhythm-log', rhythmLogRouter(ctx));
+  r.use('/harvests', harvestsRouter(ctx));
   r.use('/shopping', shoppingRouter(ctx));
   r.use('/settings', settingsRouter(ctx));
   r.get('/home', homeRoute(ctx));

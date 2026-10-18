@@ -15,7 +15,7 @@ export const SLOT_LABEL = { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Sup
 export function AddToPlanDialog({ open, recipe, servings, recipes, initial, entry, onClose, onSaved }) {
   const defaults = () => (entry
     ? { date: entry.date, slot: entry.slot, recipe_id: entry.recipe_id ?? '', servings: entry.servings ?? '', note: entry.note ?? '' }
-    : { date: initial?.date ?? todayISO(), slot: initial?.slot ?? 'supper', recipe_id: recipe?.id ?? '', servings: servings ?? recipe?.servings ?? '', note: '' });
+    : { date: initial?.date ?? todayISO(), slot: initial?.slot ?? 'supper', recipe_id: recipe?.id ?? '', servings: servings ?? recipe?.servings ?? '', note: initial?.note ?? '' });
   const [form, setForm] = useState(defaults);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export function AddToPlanDialog({ open, recipe, servings, recipes, initial, entr
     setForm(defaults());
     // Reset only when the dialog opens or its target changes, not on every parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial?.date, initial?.slot, recipe?.id, entry?.id]);
+  }, [open, initial?.date, initial?.slot, initial?.note, recipe?.id, entry?.id]);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   async function save() {
@@ -36,6 +36,8 @@ export function AddToPlanDialog({ open, recipe, servings, recipes, initial, entr
     setErrors({});
     const body = { ...form, recipe_id: form.recipe_id ? Number(form.recipe_id) : null, note: form.recipe_id ? null : form.note };
     if (!body.recipe_id) body.servings = null;
+    // A staple planned from the rhythm list stays tied to it, so ticking it done logs a make.
+    if (!entry && initial?.rhythm_id) body.rhythm_id = initial.rhythm_id;
     try {
       if (entry) await api.patch(`/api/plan/${entry.id}`, body);
       else await api.post('/api/plan', body);

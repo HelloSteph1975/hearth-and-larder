@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBasket, BookOpen, Settings as Cog, Plus } from 'lucide-react';
+import { ShoppingBasket, BookOpen, Settings as Cog, Plus, Check } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader.jsx';
 import { Card } from '../components/Card.jsx';
 import { Button } from '../components/Button.jsx';
@@ -15,6 +15,7 @@ import { api } from '../lib/api.js';
 import { todayISO, prettyDate, relativeDays } from '../lib/dates.js';
 import { formatQty } from '../lib/format.js';
 import { KIND_LABEL, readyRange, readyState } from '../lib/batch.js';
+import { statusOf, markMade } from '../lib/rhythm.js';
 
 export function greeting(hour, name) {
   const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
@@ -153,6 +154,32 @@ export function JarsCard({ rows, today }) {
   );
 }
 
+export function DueSoonCard({ rows, today, onChange }) {
+  const toast = useToast();
+  return (
+    <Card as="section" className="home-card" aria-labelledby="h-due">
+      <h2 id="h-due">Due this week</h2>
+      {rows.length === 0 ? <p className="hand">Nothing to make just now. <Link to="/batch-days">See your rhythm</Link></p> : (
+        <ul className="home-list">
+          {rows.slice(0, 6).map(r => {
+            const [tone, text] = statusOf(r, today);
+            return (
+              <li key={r.id}>
+                <div className="home-main">
+                  <span className="jar-task"><strong>{r.name}</strong></span>
+                  <span className={tone ? '' : 'muted'}>{tone ? <Badge tone={tone}>{text}</Badge> : text}</span>
+                </div>
+                <Button size="sm" variant="secondary" icon={Check} aria-label={`Made ${r.name} today`} onClick={() => markMade(r, today, { toast, onChange })}>Made it</Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {rows.length > 6 && <p className="home-more"><Link to="/batch-days">{rows.length - 6} more</Link></p>}
+    </Card>
+  );
+}
+
 function CanMakeCard({ recipes }) {
   return (
     <Card as="section" className="home-card" aria-labelledby="h-can">
@@ -194,7 +221,7 @@ export function Hearth() {
   if (error) return <div className="card error-card"><p className="error-note">{error.message}</p><Button variant="secondary" onClick={reload}>Try again</Button></div>;
   if (!data) return <div className="grid-cards" aria-busy="true" aria-label="Loading">{[0, 1, 2].map(i => <span key={i} className="skeleton skeleton-card" />)}</div>;
 
-  const { settings, use_soon, running_low, today, can_make, recently_cooked, counts, jars_working: jars = [] } = data;
+  const { settings, use_soon, running_low, today, can_make, recently_cooked, counts, jars_working: jars = [], due_soon: due = [] } = data;
   const meals = today.filter(e => e.slot !== 'batch').length;
   const firstRun = counts.items === 0 && counts.recipes === 0;
   const n = use_soon.length;
@@ -216,6 +243,7 @@ export function Hearth() {
             <UseSoonCard rows={use_soon} />
             <LowCard rows={running_low} />
             <TodayCard rows={today} />
+            <DueSoonCard rows={due} today={todayISO()} onChange={reload} />
             <JarsCard rows={jars} today={todayISO()} />
             <CanMakeCard recipes={can_make} />
             <CookedCard rows={recently_cooked} />

@@ -28,8 +28,16 @@ export const ingredientSchema = {
   optional: { type: 'bool', nullable: false }, is_staple: { type: 'bool', nullable: false },
 };
 export const cookLogSchema = { recipe_id: 'int!', cooked_on: 'date!', servings: { type: 'number', min: 0 }, notes: 'string' };
-export const planSchema = { date: 'date!', slot: { type: SLOTS, required: true }, recipe_id: 'int', note: 'string', servings: { type: 'number', min: 0.25 }, sort_order: { type: 'int', nullable: false }, done_on: 'date' };
+export const planSchema = { date: 'date!', slot: { type: SLOTS, required: true }, recipe_id: 'int', note: 'string', servings: { type: 'number', min: 0.25 }, sort_order: { type: 'int', nullable: false }, done_on: 'date', rhythm_id: 'int' };
 export const shoppingSchema = {
   name: 'string!', quantity: { type: 'number', min: 0 }, unit: 'string', category_id: 'int',
   est_price: { type: 'number', min: 0 }, checked: { type: 'bool', nullable: false },
+};
+export const rhythmSchema = {
+  name: 'string!', every_min: { type: 'int', min: 1, max: 520 }, every_max: { type: 'int', min: 1, max: 520 }, every_unit: ['weeks', 'months', 'years'],
+  season_months: 'string', crops: 'string', notes: 'string', sort_order: { type: 'int', nullable: false },
+};
+export const rhythmLogSchema = { rhythm_id: 'int!', made_on: 'date!' };
+export const harvestSchema = {
+  crop: 'string!', quantity: { type: 'number', min: 0 }, unit: 'string', harvested_on: 'date!', note: 'string', source: { type: 'string', nullable: false },
 };

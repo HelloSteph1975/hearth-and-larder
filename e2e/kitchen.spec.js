@@ -133,3 +133,40 @@ test('a batch week goes on the planner and its jar shows on the Hearth', async (
   await page.getByRole('link', { name: 'Batch Days' }).click();
   await expect(page.locator('.batch-week').first()).toContainText('Planned from');
 });
+
+test('a harvest makes a staple due, and making it clears it', async ({ page }) => {
+  // 1. Log a basil harvest from the rhythm list.
+  await page.goto('/batch-days');
+  await page.getByRole('button', { name: 'Log a harvest' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Crop').fill('Basil');
+  await dialog.getByLabel('Amount').fill('2');
+  await dialog.getByLabel('Unit').fill('bunch');
+  await dialog.getByRole('button', { name: 'Log it' }).click();
+  const pesto = page.locator('.rhythm-row', { hasText: 'Pesto' });
+  await expect(pesto).toContainText('Basil picked today');
+
+  // 2. The Hearth lists it under Due this week; Made it takes it off.
+  await page.getByRole('link', { name: 'Hearth & Larder, home' }).click();
+  const due = page.locator('section', { has: page.getByRole('heading', { name: 'Due this week' }) });
+  await expect(due).toContainText('Pesto');
+  await due.getByRole('button', { name: 'Made Pesto today' }).click();
+  await expect(due).not.toContainText('Pesto');
+
+  // 3. Add a staple of her own, then plan it; ticking it done counts as made.
+  await page.getByRole('link', { name: 'Batch Days' }).click();
+  await page.getByRole('button', { name: 'Add a staple' }).click();
+  await dialog.getByLabel('What you make').fill('Granola');
+  await dialog.getByLabel('How often').selectOption('w2');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  const granola = page.locator('.rhythm-row', { hasText: 'Granola' });
+  await expect(granola).toContainText('Not made yet');
+  await granola.getByRole('button', { name: 'Plan Granola' }).click();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('link', { name: 'Meal Planner' }).first().click();
+  const task = page.locator('.plan-entry.is-batch', { hasText: 'Granola' });
+  await task.getByRole('checkbox', { name: /^Done/ }).check();
+  await expect(task).toHaveClass(/is-done/);
+  await page.getByRole('link', { name: 'Batch Days' }).first().click();
+  await expect(page.locator('.rhythm-row', { hasText: 'Granola' })).toContainText('last made');
+});

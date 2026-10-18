@@ -1311,3 +1311,4 @@ a.tag:hover { transform: translateY(-1px) rotate(-1deg); color: var(--ink); }
   .rhythm-row { grid-template-columns: minmax(0, 1fr) auto; }
   .rhythm-tools { grid-column: 1 / -1; flex-wrap: wrap; }
 }
+.welcome-due { max-width: 640px; margin: 18px auto 0; grid-template-columns: minmax(0, 1fr); }

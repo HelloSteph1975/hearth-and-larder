@@ -8,10 +8,11 @@ import { check } from '../validate.js';
 import { HttpError } from '../http.js';
 import { planSchema } from '../schemas.js';
 
-function checkEntry(ctx, data) {
+function checkEntry(ctx, data, row) {
   if (!data.recipe_id && !data.note) throw new HttpError(400, 'Pick a recipe or write a note.', { note: 'Pick a recipe or write a note' });
   if (data.recipe_id && !repos(ctx.db).recipes.get(data.recipe_id)) throw new HttpError(400, 'Unknown recipe.', { recipe_id: 'Unknown recipe' });
-  if (data.rhythm_id && !repos(ctx.db).rhythms.get(data.rhythm_id)) throw new HttpError(400, 'Unknown staple.', { rhythm_id: 'Unknown staple' });
+  // A task keeps working after its staple is deleted; only a new or changed link must name a live staple.
+  if (data.rhythm_id && data.rhythm_id !== row?.rhythm_id && !repos(ctx.db).rhythms.get(data.rhythm_id)) throw new HttpError(400, 'Unknown staple.', { rhythm_id: 'Unknown staple' });
 }
 
 // A make logged by ticking a planner task goes and comes back with that task.

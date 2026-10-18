@@ -35,7 +35,10 @@ export function rhythmsRouter(ctx) {
 }
 
 export function rhythmLogRouter(ctx) {
-  return crudRouter(ctx, { repo: db => repos(db).rhythmLog, schema: rhythmLogSchema, filters: ['rhythm_id'] });
+  const checkLog = (ctx, data) => {
+    if (!repos(ctx.db).rhythms.get(data.rhythm_id)) throw new HttpError(400, 'Unknown staple.', { rhythm_id: 'Unknown staple' });
+  };
+  return crudRouter(ctx, { repo: db => repos(db).rhythmLog, schema: rhythmLogSchema, filters: ['rhythm_id'], validateRow: checkLog });
 }
 
 // Harvests come from the Log a harvest dialog, or from a garden app on this computer.

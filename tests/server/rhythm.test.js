@@ -116,3 +116,22 @@ it('the Hearth lists what is due this week, most pressing first', async () => {
   expect(due.map(d => d[0])).not.toContain('Mustard');
   expect(due.map(d => d[0])).not.toContain('Yogurt');
 });
+
+it('tasks of a deleted staple can still be ticked and moved, and old rows purge cleanly', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const yogurt = await byName('2026-10-17', 'Yogurt');
+  const e = (await h().post('/api/plan').send({ date: '2026-10-19', slot: 'batch', note: 'Yogurt', rhythm_id: yogurt.id })).body;
+  await h().delete(`/api/rhythms/${yogurt.id}`);
+  expect((await h().patch(`/api/plan/${e.id}`).send({ done_on: '2026-10-19' })).status).toBe(200);
+  expect((await h().patch(`/api/plan/${e.id}`).send({ date: '2026-10-20' })).status).toBe(200);
+  expect((await h().post('/api/rhythm-log').send({ rhythm_id: yogurt.id, made_on: '2026-10-19' })).status).toBe(400);
+  await h().delete(`/api/plan/${e.id}`);
+  await h().post('/api/harvests').send({ crop: 'Basil', harvested_on: '2026-10-16' }).then(r => h().delete(`/api/harvests/${r.body.id}`));
+  const { purgeSoftDeleted } = await import('../../server/services/purge.js');
+  const later = Date.now() + 40 * 86400000;
+  expect(() => purgeSoftDeleted(t.ctx.db, t.dataDir, { now: later })).not.toThrow();
+  const n = table => t.ctx.db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n;
+  expect([n('rhythm_log'), n('harvests'), t.ctx.db.prepare('SELECT COUNT(*) n FROM meal_plan WHERE id = ?').get(e.id).n]).toEqual([0, 0, 0]);
+  expect(t.ctx.db.prepare('SELECT 1 FROM rhythms WHERE id = ?').get(yogurt.id)).toBeUndefined();
+});

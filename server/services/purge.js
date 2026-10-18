@@ -33,7 +33,13 @@ export function purgeSoftDeleted(db, dataDir, { days = 30, now = Date.now() } = 
     db.prepare(`UPDATE shopping_items SET category_id = NULL WHERE category_id IN (${old('categories')})`).run();
     run('categories', `DELETE FROM categories WHERE id IN (${old('categories')})`);
     run('cook_log', `DELETE FROM cook_log WHERE recipe_id IN (${old('recipes')}) OR id IN (${old('cook_log')})`);
-    run('meal_plan', `DELETE FROM meal_plan WHERE recipe_id IN (${old('recipes')}) OR id IN (${old('meal_plan')})`);
+    // Rhythm logs point at planner tasks and staples, so they go before either.
+    const doomedEntries = `SELECT id FROM meal_plan WHERE recipe_id IN (${old('recipes')}) OR id IN (${old('meal_plan')})`;
+    run('rhythm_log', `DELETE FROM rhythm_log WHERE plan_entry_id IN (${doomedEntries}) OR rhythm_id IN (${old('rhythms')}) OR id IN (${old('rhythm_log')})`);
+    run('meal_plan', `DELETE FROM meal_plan WHERE id IN (${doomedEntries})`);
+    db.prepare(`UPDATE meal_plan SET rhythm_id = NULL WHERE rhythm_id IN (${old('rhythms')})`).run();
+    run('rhythms', `DELETE FROM rhythms WHERE id IN (${old('rhythms')})`);
+    run('harvests', `DELETE FROM harvests WHERE id IN (${old('harvests')})`);
     db.prepare(`UPDATE batches SET recipe_id = NULL WHERE recipe_id IN (${old('recipes')})`).run();
     run('photos', `DELETE FROM photos WHERE owner_type = 'recipe' AND owner_id IN (${old('recipes')})`);
     run('recipes', `DELETE FROM recipes WHERE id IN (${old('recipes')})`);

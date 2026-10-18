@@ -231,7 +231,13 @@ export function Hearth() {
   return (
     <>
       <PageHeader title={greeting(new Date().getHours(), settings.household_name)} note={note} />
-      {firstRun ? <Welcome ready={stores.length > 0} onAddJar={() => setAdding(true)} /> : (
+      {firstRun ? (
+        <>
+          <Welcome ready={stores.length > 0} onAddJar={() => setAdding(true)} />
+          {/* Someone who only tracks staples and harvests still sees what is due. */}
+          {due.some(r => r.last_made || r.harvest) && <div className="home-grid welcome-due"><DueSoonCard rows={due} today={todayISO()} onChange={reload} /></div>}
+        </>
+      ) : (
         <>
           <div className="stat-row">
             <Stat value={counts.items} label={plural(counts.items, 'thing on the shelves', 'things on the shelves')} />

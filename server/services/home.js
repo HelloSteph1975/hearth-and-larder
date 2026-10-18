@@ -1,7 +1,7 @@
 import { getSettings } from './settings.js';
 import { itemsWithStock } from '../db/items.js';
 import { listRecipes } from '../db/recipes.js';
-import { planEntries } from '../db/plan.js';
+import { planWithReady, jarsWorking } from './batch.js';
 import { stockIndex, recipeStatus } from './stock.js';
 
 const dayDiff = (a, b) => Math.round((Date.parse(a) - Date.parse(b)) / 86400000);
@@ -25,7 +25,8 @@ export function homeSummary(db, today) {
     settings,
     use_soon,
     running_low: itemsWithStock(db, { low: '1' }),
-    today: planEntries(db, today, today),
+    today: planWithReady(db, today, today),
+    jars_working: jarsWorking(db, today),
     can_make,
     recently_cooked,
     counts: {

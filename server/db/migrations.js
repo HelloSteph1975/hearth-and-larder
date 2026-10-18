@@ -1,4 +1,6 @@
-const TS = `created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), deleted_at TEXT`;
+import { BATCH_MONTHS } from './batchSeed.js';
+
+const TS =`created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), deleted_at TEXT`;
 
 export const migrations = [
   `
@@ -82,7 +84,53 @@ export const migrations = [
       s.shelves.forEach((shelf, i) => addShelf.run(id, shelf, i));
     }
   },
+  // 4: batch days. The planner gains a 'batch' slot, and twelve built-in batch weeks
+  // can be placed on it. SQLite can't change a CHECK, so meal_plan is rebuilt with its rows kept.
+  db => {
+    db.exec(`
+    CREATE TABLE batch_plans (id INTEGER PRIMARY KEY, week_no INTEGER NOT NULL, month_title TEXT NOT NULL, month_note TEXT,
+      title TEXT NOT NULL, cook TEXT, ${TS});
+    CREATE TABLE batch_days (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL REFERENCES batch_plans(id),
+      day_no INTEGER NOT NULL CHECK (day_no BETWEEN 1 AND 3), kind TEXT NOT NULL CHECK (kind IN ('big','jar','refill')), task TEXT NOT NULL,
+      ready_min INTEGER, ready_max INTEGER, ready_unit TEXT CHECK (ready_unit IN ('days','weeks','months')));
+    CREATE TABLE batch_day_ingredients (id INTEGER PRIMARY KEY, day_id INTEGER NOT NULL REFERENCES batch_days(id),
+      name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE batch_runs (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL REFERENCES batch_plans(id), ${TS});
+
+    CREATE TABLE meal_plan_new (id INTEGER PRIMARY KEY, date TEXT NOT NULL,
+      slot TEXT NOT NULL CHECK (slot IN ('breakfast','lunch','supper','snack','batch')),
+      recipe_id INTEGER REFERENCES recipes(id), note TEXT, servings REAL, sort_order INTEGER NOT NULL DEFAULT 0,
+      batch_run_id INTEGER REFERENCES batch_runs(id), batch_day_id INTEGER REFERENCES batch_days(id), done_on TEXT, ${TS},
+      CHECK (recipe_id IS NOT NULL OR note IS NOT NULL));
+    INSERT INTO meal_plan_new (id, date, slot, recipe_id, note, servings, sort_order, created_at, updated_at, deleted_at)
+      SELECT id, date, slot, recipe_id, note, servings, sort_order, created_at, updated_at, deleted_at FROM meal_plan;
+    DROP TABLE meal_plan;
+    ALTER TABLE meal_plan_new RENAME TO meal_plan;
+    CREATE INDEX idx_plan_date ON meal_plan(date);
+    CREATE INDEX idx_plan_run ON meal_plan(batch_run_id);
+    CREATE INDEX idx_batch_days_plan ON batch_days(plan_id);
+    CREATE INDEX idx_batch_ing_day ON batch_day_ingredients(day_id);
+    `);
+    seedBatchPlans(db);
+  },
 ];
+
+function seedBatchPlans(db) {
+  const addPlan = db.prepare('INSERT INTO batch_plans (week_no, month_title, month_note, title, cook) VALUES (?, ?, ?, ?, ?)');
+  const addDay = db.prepare('INSERT INTO batch_days (plan_id, day_no, kind, task, ready_min, ready_max, ready_unit) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  const addIng = db.prepare('INSERT INTO batch_day_ingredients (day_id, name, sort_order) VALUES (?, ?, ?)');
+  let weekNo = 0;
+  for (const month of BATCH_MONTHS) {
+    for (const week of month.weeks) {
+      const planId = Number(addPlan.run(++weekNo, month.title, month.note, week.title, week.cook).lastInsertRowid);
+      week.days.forEach(([kind, task, ready, ingredients], i) => {
+        const [min, max, unit] = ready ?? [null, null, null];
+        const dayId = Number(addDay.run(planId, i + 1, kind, task, min, max, unit).lastInsertRowid);
+        ingredients.forEach((name, j) => addIng.run(dayId, name, j));
+      });
+    }
+  }
+}
 
 export function migrate(db) {
   const current = db.prepare('PRAGMA user_version').get().user_version;

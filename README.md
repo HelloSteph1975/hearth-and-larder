@@ -59,7 +59,8 @@ Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don'
 - Stores recipes with scaling, ratings, tags and nutrition, and shows which ingredients you already have.
 - Suggests what you can make from what is on the shelves.
 - Plans meals on a weekly calendar. Drag a recipe onto a day, or use the plus button. Click the pencil on a meal to change its day, meal or servings.
-- Builds a shopping list from the plan, leaving off anything the larder already covers or that you have already ticked.
+- Holds twelve built-in batch weeks (a big make, a jar to start and a staple to refill). Pick a week and three days, and the tasks land in the planner's Batch row. Tick them done there, and the Hearth shows when each jar will be ready.
+- Builds a shopping list from the plan, including what a batch week needs, leaving off anything the larder already covers or that you have already ticked.
 - Takes ingredients off the shelves when you tell it you cooked a recipe. Each recipe keeps a cooking history, and deleting an entry puts the ingredients back.
 - Lets you undo a delete for a few seconds. Deleted things are kept for 30 days before they are purged.
 - Prints tidy pages: a recipe card at the servings you choose, a store inventory, one item with its batches and prices, the week's meal plan on one landscape page, and a Recipe Box index or a stack of chosen recipe cards. The landscape week needs Chrome or Edge.
@@ -70,7 +71,7 @@ Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don'
 | ![A store with its items](docs/screenshots/larder.png) | ![One item with its batches](docs/screenshots/item.png) |
 | ![A recipe with ingredient status](docs/screenshots/recipe.png) | ![The weekly meal planner](docs/screenshots/planner.png) |
 | ![The shopping list](docs/screenshots/shopping.png) | ![Settings and backups](docs/screenshots/settings.png) |
-| ![The Freezer with its frozen batches](docs/screenshots/freezer.png) | |
+| ![The Freezer with its frozen batches](docs/screenshots/freezer.png) | ![Batch Days, twelve weeks of batch cooking](docs/screenshots/batch-days.png) |
 
 ## What you need
 

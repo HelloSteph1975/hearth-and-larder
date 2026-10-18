@@ -1,6 +1,6 @@
 export const SOURCES = ['home-grown', 'preserved', 'bought', 'gifted', 'foraged'];
 export const METHODS = ['water bath', 'pressure canned', 'dehydrated', 'fermented', 'cured', 'frozen', 'root storage', 'as bought', 'other'];
-export const SLOTS = ['breakfast', 'lunch', 'supper', 'snack'];
+export const SLOTS = ['breakfast', 'lunch', 'supper', 'snack', 'batch'];
 
 export const storeSchema = { name: 'string!', icon: { type: 'string', nullable: false }, color: { type: 'string', nullable: false }, sort_order: { type: 'int', nullable: false } };
 export const categorySchema = { name: 'string!', kind: { type: ['item', 'shopping'], nullable: false }, sort_order: { type: 'int', nullable: false } };
@@ -28,7 +28,7 @@ export const ingredientSchema = {
   optional: { type: 'bool', nullable: false }, is_staple: { type: 'bool', nullable: false },
 };
 export const cookLogSchema = { recipe_id: 'int!', cooked_on: 'date!', servings: { type: 'number', min: 0 }, notes: 'string' };
-export const planSchema = { date: 'date!', slot: { type: SLOTS, required: true }, recipe_id: 'int', note: 'string', servings: { type: 'number', min: 0.25 }, sort_order: { type: 'int', nullable: false } };
+export const planSchema = { date: 'date!', slot: { type: SLOTS, required: true }, recipe_id: 'int', note: 'string', servings: { type: 'number', min: 0.25 }, sort_order: { type: 'int', nullable: false }, done_on: 'date' };
 export const shoppingSchema = {
   name: 'string!', quantity: { type: 'number', min: 0 }, unit: 'string', category_id: 'int',
   est_price: { type: 'number', min: 0 }, checked: { type: 'bool', nullable: false },

@@ -7,8 +7,8 @@ import { useToast } from './ToastProvider.jsx';
 import { api } from '../lib/api.js';
 import { prettyDate, todayISO } from '../lib/dates.js';
 
-export const SLOTS = ['breakfast', 'lunch', 'supper', 'snack'];
-export const SLOT_LABEL = { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack' };
+export const SLOTS = ['breakfast', 'lunch', 'supper', 'snack', 'batch'];
+export const SLOT_LABEL = { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack', batch: 'Batch' };
 
 // With `entry`, edits that plan entry (PATCH) instead of adding a new one.
 // `servings` starts a new entry at that many (the recipe page passes what it is scaled to).

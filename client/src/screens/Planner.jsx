@@ -89,7 +89,7 @@ function Entry({ entry, onRemove, onEdit, onDone }) {
         {entry.servings ? <small className="muted"> x{entry.servings}</small> : null}
       </span>
       {ready && <small className="ready-note">{ready}</small>}
-      {batch && (
+      {(batch || entry.rhythm_id) && (
         <label className="done-tick">
           <input type="checkbox" checked={done} onChange={e => tick(e.target.checked)} aria-label={`Done: ${label}`} /> Done
         </label>

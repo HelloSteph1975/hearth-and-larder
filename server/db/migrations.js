@@ -1,4 +1,5 @@
 import { BATCH_MONTHS } from './batchSeed.js';
+import { RHYTHM_SEED } from './rhythmSeed.js';
 
 const TS =`created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), deleted_at TEXT`;
 
@@ -112,6 +113,29 @@ export const migrations = [
     CREATE INDEX idx_batch_ing_day ON batch_day_ingredients(day_id);
     `);
     seedBatchPlans(db);
+  },
+  // 5: the rhythm list. Staples made on a repeat or in their season, a log of each time one
+  // was made, and harvests (logged here or sent by a garden app) that make a staple due.
+  db => {
+    db.exec(`
+    CREATE TABLE rhythms (id INTEGER PRIMARY KEY, name TEXT NOT NULL,
+      every_min INTEGER, every_max INTEGER, every_unit TEXT CHECK (every_unit IN ('weeks','months','years')),
+      season_months TEXT, crops TEXT, notes TEXT, sort_order INTEGER NOT NULL DEFAULT 0, ${TS},
+      CHECK (every_min IS NOT NULL OR season_months IS NOT NULL));
+    CREATE TABLE harvests (id INTEGER PRIMARY KEY, crop TEXT NOT NULL, quantity REAL, unit TEXT, harvested_on TEXT NOT NULL,
+      note TEXT, source TEXT NOT NULL DEFAULT 'manual', ${TS});
+    ALTER TABLE meal_plan ADD COLUMN rhythm_id INTEGER REFERENCES rhythms(id);
+    CREATE TABLE rhythm_log (id INTEGER PRIMARY KEY, rhythm_id INTEGER NOT NULL REFERENCES rhythms(id), made_on TEXT NOT NULL,
+      plan_entry_id INTEGER REFERENCES meal_plan(id), ${TS});
+    CREATE INDEX idx_rhythm_log ON rhythm_log(rhythm_id);
+    CREATE INDEX idx_rhythm_log_entry ON rhythm_log(plan_entry_id);
+    CREATE INDEX idx_harvests_on ON harvests(harvested_on);
+    `);
+    const add = db.prepare('INSERT INTO rhythms (name, every_min, every_max, every_unit, season_months, crops, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    RHYTHM_SEED.forEach(([name, every, months, crops], i) => {
+      const [min, max, unit] = every ?? [null, null, null];
+      add.run(name, min, max, unit, months ? months.join(',') : null, crops, i);
+    });
   },
 ];
 

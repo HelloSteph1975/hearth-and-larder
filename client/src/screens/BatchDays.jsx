@@ -5,6 +5,7 @@ import { PageHeader } from '../components/PageHeader.jsx';
 import { Button } from '../components/Button.jsx';
 import { Badge } from '../components/Badge.jsx';
 import { PlaceBatchDialog } from '../components/PlaceBatchDialog.jsx';
+import { RhythmList } from '../components/RhythmList.jsx';
 import { useSettings } from '../components/SettingsProvider.jsx';
 import { useApi } from '../lib/useApi.js';
 import { todayISO, weekStart, prettyDate, addDays } from '../lib/dates.js';
@@ -63,16 +64,21 @@ export function BatchDays() {
 
   return (
     <>
-      <PageHeader title="Batch Days" note={`${done} of ${data.length} weeks done${next ? `. Next up: Week ${next.week_no}` : ''}`}
+      <PageHeader title="Batch Days" note="make a little, often, and the larder fills itself"
         actions={<Button as={Link} to="/planner" variant="ghost" icon={CalendarDays}>Meal Planner</Button>} />
-      <p className="batch-intro">Three short sessions a week: a big make, one jar to start, and one staple to refill. Pick a week, pick three days, and the tasks land on your planner. Tick each one off there as you go.</p>
+      <RhythmList />
+      <section className="batch-starter" aria-labelledby="h-starter">
+        <h2 id="h-starter">The first twelve weeks</h2>
+        <p className="muted">{`${done} of ${data.length} weeks done${next ? `. Next up: Week ${next.week_no}` : ''}.`}</p>
+        <p className="batch-intro">A starter path, if you'd like one. Three short sessions a week: a big make, one jar to start, and one staple to refill. Pick a week, pick three days, and the tasks land on your planner. Tick each one off there as you go.</p>
       {months.map(m => (
         <section key={m.title} className="batch-month" aria-labelledby={`bm-${m.weeks[0].id}`}>
-          <h2 id={`bm-${m.weeks[0].id}`}>{m.title}</h2>
+          <h3 id={`bm-${m.weeks[0].id}`}>{m.title}</h3>
           {m.note && <p className="muted">{m.note}</p>}
           <div className="batch-weeks">{m.weeks.map(p => <WeekCard key={p.id} plan={p} onPlace={setPlacing} />)}</div>
         </section>
       ))}
+      </section>
       <PlaceBatchDialog open={Boolean(placing)} plan={placing} start={start} onClose={() => setPlacing(null)}
         onSaved={from => { setPlacing(null); navigate(`/planner?week=${from}`); }} />
     </>

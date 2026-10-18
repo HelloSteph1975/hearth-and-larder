@@ -59,6 +59,7 @@ Hearth & Larder won't open. Please check what's wrong. Follow AGENTS.md and don'
 - Stores recipes with scaling, ratings, tags and nutrition, and shows which ingredients you already have.
 - Suggests what you can make from what is on the shelves.
 - Plans meals on a weekly calendar. Drag a recipe onto a day, or use the plus button. Click the pencil on a meal to change its day, meal or servings.
+- Keeps a rhythm of staples you make again and again (bread every week, ghee every few weeks, apple butter in autumn). Tap Made it and it works out when each one is due again. A harvest of a crop it is made from, logged by hand or sent by a garden app, makes it due now. The Hearth lists what is due this week.
 - Holds twelve built-in batch weeks (a big make, a jar to start and a staple to refill). Pick a week and three days, and the tasks land in the planner's Batch row. Tick them done there, and the Hearth shows when each jar will be ready.
 - Builds a shopping list from the plan, including what a batch week needs, leaving off anything the larder already covers or that you have already ticked.
 - Takes ingredients off the shelves when you tell it you cooked a recipe. Each recipe keeps a cooking history, and deleting an entry puts the ingredients back.

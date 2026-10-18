@@ -59,10 +59,11 @@ it('shows jars working with where each one stands', () => {
 
 it('lists the weeks by month and says which are done', async () => {
   const done = { ...WEEK1, id: 2, week_no: 2, title: 'Masa', runs: [{ id: 1, first_date: '2026-10-12' }], done: true, done_on: '2026-10-17' };
-  global.fetch = vi.fn(async () => new Response(JSON.stringify([{ ...done }, { ...WEEK1, id: 3, week_no: 3 }]), { status: 200 }));
+  const plans = [{ ...done }, { ...WEEK1, id: 3, week_no: 3 }];
+  global.fetch = vi.fn(async url => new Response(JSON.stringify(String(url).startsWith('/api/batch-plans') ? plans : []), { status: 200 }));
   render(<MemoryRouter><ToastProvider><BatchDays /></ToastProvider></MemoryRouter>);
   expect(await screen.findByRole('heading', { name: 'Month 1: Mexican foundations' })).toBeInTheDocument();
-  expect(screen.getByText('1 of 2 weeks done. Next up: Week 3')).toBeInTheDocument();
+  expect(screen.getByText('1 of 2 weeks done. Next up: Week 3.')).toBeInTheDocument();
   expect(screen.getByText('Done Sat 17 Oct')).toBeInTheDocument();
   expect(screen.getAllByText('Ready in 7 to 14 days')).toHaveLength(2);
   expect(screen.getByRole('button', { name: 'Put Week 2 on the planner' })).toHaveTextContent('Plan it again');

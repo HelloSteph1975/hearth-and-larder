@@ -83,8 +83,8 @@ export function buildFromPlan(db, from, to) {
   const categoryFor = categoryLookup(db);
   const ticked = tickedPlanRows(db, `${from}..${to}`);
   const out = [];
-  // A batch need is already covered when a recipe asks for the same thing with an amount.
-  const measured = new Set([...needs].filter(([, n]) => !n.unitless).map(([k]) => k.split('|')[0]));
+  // A batch need is already covered when a recipe asks for some of the same thing by amount.
+  const measured = new Set([...needs].filter(([, n]) => !n.unitless && n.base > 1e-9).map(([k]) => k.split('|')[0]));
   for (const [key, n] of needs) if (n.batch && measured.has(key.split('|')[0])) needs.delete(key);
   for (const [key, n] of needs) {
     const name = key.split('|')[0];

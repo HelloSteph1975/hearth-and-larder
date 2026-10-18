@@ -176,3 +176,14 @@ it('a batch need is left off when a planned recipe asks for the same thing by am
   const list = (await h().post('/api/shopping/build').send({ from: '2026-10-19', to: '2026-10-25' })).body;
   expect(list.filter(s => s.name === 'Carrots').map(s => [s.quantity, s.unit])).toEqual([[2, 'lb']]);
 });
+
+it('a recipe asking for none of something leaves the batch need on the list', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const w1 = (await plans())[0];
+  await h().post(`/api/batch-plans/${w1.id}/place`).send({ dates: ['2026-10-19', '2026-10-21', '2026-10-24'] });
+  const rec = (await h().post('/api/recipes').send({ title: 'Plain broth', servings: 2, ingredients: [{ name: 'Carrots', quantity: 0, unit: 'lb' }] })).body;
+  await h().post('/api/plan').send({ date: '2026-10-20', slot: 'supper', recipe_id: rec.id });
+  const list = (await h().post('/api/shopping/build').send({ from: '2026-10-19', to: '2026-10-25' })).body;
+  expect(list.filter(s => s.name === 'Carrots').map(s => s.quantity)).toEqual([null]);
+});

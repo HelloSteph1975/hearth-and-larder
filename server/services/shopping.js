@@ -64,7 +64,7 @@ export function buildFromPlan(db, from, to) {
   // A batch task's ingredients have no amounts: they go on the list only when none is on the shelves.
   for (const name of batchNeeds(db, entries)) {
     const key = `${normalizeName(name)}|unitless`;
-    if (!needs.has(key)) needs.set(key, { name, unit: null, family: 'unitless', base: 0, unitless: true });
+    if (!needs.has(key)) needs.set(key, { name, unit: null, family: 'unitless', base: 0, unitless: true, batch: true });
   }
   for (const entry of entries) {
     if (!entry.recipe_id) continue;
@@ -83,6 +83,9 @@ export function buildFromPlan(db, from, to) {
   const categoryFor = categoryLookup(db);
   const ticked = tickedPlanRows(db, `${from}..${to}`);
   const out = [];
+  // A batch need is already covered when a recipe asks for the same thing with an amount.
+  const measured = new Set([...needs].filter(([, n]) => !n.unitless).map(([k]) => k.split('|')[0]));
+  for (const [key, n] of needs) if (n.batch && measured.has(key.split('|')[0])) needs.delete(key);
   for (const [key, n] of needs) {
     const name = key.split('|')[0];
     const batches = index.get(name) ?? [];

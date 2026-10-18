@@ -50,7 +50,7 @@ export function listBatchPlans(db) {
   const ings = db.prepare('SELECT day_id, name FROM batch_day_ingredients ORDER BY day_id, sort_order, id').all();
   // One row per placement that still has entries on the planner.
   const runs = db.prepare(`SELECT r.id, r.plan_id, MIN(m.date) AS first_date, MAX(m.date) AS last_date,
-      COUNT(m.id) AS tasks, COUNT(m.done_on) AS done_tasks
+      COUNT(m.id) AS tasks, COUNT(m.done_on) AS done_tasks, MAX(m.done_on) AS done_on
     FROM batch_runs r JOIN meal_plan m ON m.batch_run_id = r.id AND m.deleted_at IS NULL
     WHERE r.deleted_at IS NULL GROUP BY r.id ORDER BY first_date, r.id`).all();
   const ingByDay = Map.groupBy(ings, i => i.day_id);
@@ -58,13 +58,15 @@ export function listBatchPlans(db) {
   const runsByPlan = Map.groupBy(runs, r => r.plan_id);
   return plans.map(p => {
     const placed = runsByPlan.get(p.id) ?? [];
-    const finished = placed.filter(r => r.done_tasks === r.tasks);
+    const planDays = daysByPlan.get(p.id) ?? [];
+    // Done only when every day of the week was ticked; a removed task doesn't count as done.
+    const finished = placed.filter(r => r.done_tasks >= planDays.length);
     return {
       ...p,
-      days: (daysByPlan.get(p.id) ?? []).map(d => ({ ...d, ingredients: (ingByDay.get(d.id) ?? []).map(i => i.name) })),
+      days: planDays.map(d => ({ ...d, ingredients: (ingByDay.get(d.id) ?? []).map(i => i.name) })),
       runs: placed,
       done: finished.length > 0,
-      done_on: finished.at(-1)?.last_date ?? null,
+      done_on: finished.map(r => r.done_on).sort().at(-1) ?? null,
     };
   });
 }
@@ -81,6 +83,12 @@ export function placeBatchWeek(db, planId, dates) {
     }));
     return { run_id: run, entries: entries.map(e => e.id) };
   });
+}
+
+// A batch task swapped for a recipe is no longer the template day: drop its ingredients and
+// ready time, but keep it in its placement so the week still counts it.
+export function prepareBatchUpdate(data, row) {
+  return row.batch_day_id && data.recipe_id ? { ...data, batch_day_id: null } : data;
 }
 
 // Ingredients the not-yet-done batch tasks in a plan range need, as unitless shopping needs.

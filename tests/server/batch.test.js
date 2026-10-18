@@ -129,3 +129,50 @@ it('lists jars still working on the home page', async () => {
   // Long past its window, a jar drops off the list.
   expect(jarsWorking(t.ctx.db, '2026-12-01').map(j => j.batch_week)).toEqual([4]);
 });
+
+it('a week is done only when all three days are ticked, on the last day ticked', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const w1 = (await plans())[0];
+  await h().post(`/api/batch-plans/${w1.id}/place`).send({ dates: ['2026-10-19', '2026-10-21', '2026-10-24'] });
+  const [a, b, c] = await week('2026-10-19', '2026-10-25');
+  await h().patch(`/api/plan/${a.id}`).send({ done_on: '2026-10-19' });
+  await h().delete(`/api/plan/${b.id}`);
+  await h().delete(`/api/plan/${c.id}`);
+  expect((await plans())[0].done).toBe(false);
+  await h().post(`/api/plan/${b.id}/restore`);
+  await h().post(`/api/plan/${c.id}/restore`);
+  await h().patch(`/api/plan/${b.id}`).send({ done_on: '2026-10-21' });
+  await h().patch(`/api/plan/${c.id}`).send({ done_on: '2026-10-26' });
+  expect((await plans())[0]).toMatchObject({ done: true, done_on: '2026-10-26' });
+});
+
+it('a batch task swapped for a recipe drops the old ingredients and ready time but stays in its week', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const w1 = (await plans())[0];
+  await h().post(`/api/batch-plans/${w1.id}/place`).send({ dates: ['2026-10-19', '2026-10-21', '2026-10-24'] });
+  const jar = (await week('2026-10-21', '2026-10-21'))[0];
+  const rec = (await h().post('/api/recipes').send({ title: 'Pancakes', servings: 2 })).body;
+  await h().patch(`/api/plan/${jar.id}`).send({ recipe_id: rec.id, note: null });
+  const after = (await week('2026-10-21', '2026-10-21'))[0];
+  expect(after).toMatchObject({ recipe_title: 'Pancakes', batch_kind: null, ready_from: null });
+  const list = (await h().post('/api/shopping/build').send({ from: '2026-10-19', to: '2026-10-25' })).body.map(s => s.name);
+  expect(list).not.toContain('Whole rye berries');
+  expect((await plans())[0].runs[0].tasks).toBe(3);
+  // Editing a task's note keeps it linked.
+  const big = (await week('2026-10-19', '2026-10-19'))[0];
+  await h().patch(`/api/plan/${big.id}`).send({ note: 'Beans only this time' });
+  expect((await week('2026-10-19', '2026-10-19'))[0].batch_kind).toBe('big');
+});
+
+it('a batch need is left off when a planned recipe asks for the same thing by amount', async () => {
+  t = makeTestContext();
+  const h = t.http;
+  const w1 = (await plans())[0];
+  await h().post(`/api/batch-plans/${w1.id}/place`).send({ dates: ['2026-10-19', '2026-10-21', '2026-10-24'] });
+  const rec = (await h().post('/api/recipes').send({ title: 'Carrot soup', servings: 2, ingredients: [{ name: 'Carrots', quantity: 2, unit: 'lb' }] })).body;
+  await h().post('/api/plan').send({ date: '2026-10-20', slot: 'supper', recipe_id: rec.id });
+  const list = (await h().post('/api/shopping/build').send({ from: '2026-10-19', to: '2026-10-25' })).body;
+  expect(list.filter(s => s.name === 'Carrots').map(s => [s.quantity, s.unit])).toEqual([[2, 'lb']]);
+});

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { crudRouter } from './crud.js';
 import { repos } from '../db/repos.js';
-import { planWithReady } from '../services/batch.js';
+import { planWithReady, prepareBatchUpdate } from '../services/batch.js';
 import { check } from '../validate.js';
 import { HttpError } from '../http.js';
 import { planSchema } from '../schemas.js';
@@ -26,6 +26,6 @@ export function planRouter(ctx) {
     }
     res.status(201).json(repos(ctx.db).plan.create(data));
   });
-  r.use(crudRouter(ctx, { repo: db => repos(db).plan, schema: planSchema, validateRow: checkEntry }));
+  r.use(crudRouter(ctx, { repo: db => repos(db).plan, schema: planSchema, validateRow: checkEntry, prepareUpdate: (ctx, data, row) => prepareBatchUpdate(data, row) }));
   return r;
 }

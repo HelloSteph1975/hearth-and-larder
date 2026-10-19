@@ -22,7 +22,7 @@ export function repos(db) {
       rhythms: createRepo(db, 'rhythms', ['name', 'every_min', 'every_max', 'every_unit', 'season_months', 'crops', 'notes', 'sort_order'],
         { orderBy: 'sort_order, id' }),
       rhythmLog: createRepo(db, 'rhythm_log', ['rhythm_id', 'made_on', 'plan_entry_id'], { orderBy: 'made_on DESC, id DESC' }),
-      harvests: createRepo(db, 'harvests', ['crop', 'quantity', 'unit', 'harvested_on', 'note', 'source'], { orderBy: 'harvested_on DESC, id DESC' }),
+      harvests: createRepo(db, 'harvests', ['crop', 'quantity', 'unit', 'harvested_on', 'note', 'source', 'external_id'], { orderBy: 'harvested_on DESC, id DESC' }),
       shopping: createRepo(db, 'shopping_items', ['name', 'quantity', 'unit', 'category_id', 'est_price', 'checked', 'origin', 'plan_range'],
         { orderBy: 'checked, name COLLATE NOCASE' }),
     };

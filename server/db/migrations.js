@@ -137,6 +137,9 @@ export const migrations = [
       add.run(name, min, max, unit, months ? months.join(',') : null, crops, i);
     });
   },
+  // 6: harvests sent by a garden app carry the app's own id, so sending again updates the same row.
+  `ALTER TABLE harvests ADD COLUMN external_id TEXT;
+   CREATE UNIQUE INDEX idx_harvests_external ON harvests(source, external_id) WHERE external_id IS NOT NULL;`,
 ];
 
 function seedBatchPlans(db) {

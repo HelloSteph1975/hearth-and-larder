@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { crudRouter } from './crud.js';
+import { transaction } from '../db/connection.js';
 import { repos } from '../db/repos.js';
 import { check } from '../validate.js';
 import { HttpError, idParam, notFound } from '../http.js';
@@ -42,6 +43,39 @@ export function rhythmLogRouter(ctx) {
 }
 
 // Harvests come from the Log a harvest dialog, or from a garden app on this computer.
+// A garden app (such as Seed & Harvest) keys its harvests by its own name and id. Sending the same key
+// again updates that row (bringing it back from the Trash if needed); deleting it is safe to repeat.
+const SOURCE = /^[A-Za-z0-9-]{1,40}$/;
+const EXTERNAL = /^[A-Za-z0-9-]{1,80}$/;
+function externalKey(req) {
+  const { source, externalId } = req.params;
+  if (!SOURCE.test(source) || !EXTERNAL.test(externalId)) throw new HttpError(400, 'Bad source or id.');
+  return { source, externalId };
+}
+const byKey = (db, { source, externalId }) => db.prepare('SELECT id FROM harvests WHERE source = ? AND external_id = ?').get(source, externalId);
+
 export function harvestsRouter(ctx) {
-  return crudRouter(ctx, { repo: db => repos(db).harvests, schema: harvestSchema });
+  const r = Router();
+  r.put('/external/:source/:externalId', (req, res) => {
+    const key = externalKey(req);
+    const { source: _s, external_id: _e, ...fields } = check(harvestSchema, { ...req.body, source: key.source });
+    const R = repos(ctx.db).harvests;
+    const out = transaction(ctx.db, () => {
+      const found = byKey(ctx.db, key);
+      if (!found) return { row: R.create({ ...fields, source: key.source, external_id: key.externalId }), created: true };
+      if (R.get(found.id, { includeDeleted: true })?.deleted_at) R.restore(found.id);
+      return { row: R.update(found.id, { ...fields }), created: false };
+    });
+    res.status(out.created ? 201 : 200).json(out.row);
+  });
+  r.delete('/external/:source/:externalId', (req, res) => {
+    const key = externalKey(req);
+    transaction(ctx.db, () => {
+      const found = byKey(ctx.db, key);
+      if (found && !repos(ctx.db).harvests.get(found.id, { includeDeleted: true })?.deleted_at) repos(ctx.db).harvests.remove(found.id);
+    });
+    res.json({ ok: true });
+  });
+  r.use(crudRouter(ctx, { repo: db => repos(db).harvests, schema: harvestSchema }));
+  return r;
 }

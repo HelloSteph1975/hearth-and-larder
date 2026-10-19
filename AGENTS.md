@@ -67,6 +67,10 @@ npm test                   # unit and API tests (Vitest)
 npm run test:e2e           # browser test (Playwright), throwaway data folder, port 4199
 ```
 
+## Garden apps
+
+A garden app on the same computer can send harvests here. It calls `PUT /api/harvests/external/<source>/<id>` with the usual harvest fields (crop, quantity, unit, harvested_on, note). `<source>` names the app (letters, digits and dashes) and `<id>` is the harvest's id in that app. Sending the same pair again updates that row instead of adding a second one. `DELETE /api/harvests/external/<source>/<id>` moves it to the Trash, and does nothing if it is not there. Seed & Harvest uses the source `seed-and-harvest`.
+
 ## For contributors
 
 - Work on a branch, not `main`. Run `npm test` before committing, and `npm run test:e2e` for UI changes.

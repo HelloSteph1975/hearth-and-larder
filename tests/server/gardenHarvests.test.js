@@ -53,3 +53,35 @@ it('harvests logged by hand are unchanged', async () => {
   expect(res.status).toBe(201);
   expect(res.body.external_id ?? null).toBeNull();
 });
+
+it('editing a garden harvest by hand keeps its source, so the next resend finds it', async () => {
+  const first = await put('seed-and-harvest', '12', TOMATO);
+  const edit = await t.http().patch(`/api/harvests/${first.body.id}`).send({ source: 'manual', quantity: 5 });
+  expect(edit.status).toBe(200);
+  expect(edit.body).toMatchObject({ source: 'seed-and-harvest', quantity: 5 });
+  await put('seed-and-harvest', '12', { ...TOMATO, quantity: 7 });
+  expect(live()).toHaveLength(1);
+  expect(live()[0]).toMatchObject({ id: first.body.id, quantity: 7 });
+});
+
+it('upgrading keeps saved harvests as they were, twice over', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const { migrations, migrate } = await import('../../server/db/migrations.js');
+  const db = new DatabaseSync(':memory:');
+  try {
+    for (const step of migrations.slice(0, 5)) { if (typeof step === 'function') step(db); else db.exec(step); }
+    db.exec('PRAGMA user_version = 5');
+    const add = db.prepare('INSERT INTO harvests (crop, quantity, unit, harvested_on, source, deleted_at) VALUES (?, ?, ?, ?, ?, ?)');
+    add.run('Tomato', 2, 'lb', '2026-08-01', 'garden', null);
+    add.run('Bean', 1, 'lb', '2026-08-02', 'garden', null);
+    add.run('Squash', 3, 'count', '2026-08-03', 'garden', '2026-09-01 10:00:00');
+    const before = db.prepare('SELECT * FROM harvests ORDER BY id').all();
+    migrate(db);
+    migrate(db);
+    const after = db.prepare('SELECT * FROM harvests ORDER BY id').all();
+    expect(after.map(({ external_id, ...r }) => r)).toEqual(before);
+    expect(after.every(r => r.external_id === null)).toBe(true);
+  } finally {
+    db.close();
+  }
+});

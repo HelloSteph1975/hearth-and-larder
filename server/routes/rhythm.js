@@ -76,6 +76,12 @@ export function harvestsRouter(ctx) {
     });
     res.json({ ok: true });
   });
-  r.use(crudRouter(ctx, { repo: db => repos(db).harvests, schema: harvestSchema }));
+  // A garden harvest keeps its source when edited by hand: the app finds it again by source and id.
+  const keepSource = (c, data, row) => {
+    if (row.external_id == null) return data;
+    const { source: _s, ...rest } = data;
+    return rest;
+  };
+  r.use(crudRouter(ctx, { repo: db => repos(db).harvests, schema: harvestSchema, prepareUpdate: keepSource }));
   return r;
 }
